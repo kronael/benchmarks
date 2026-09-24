@@ -77,11 +77,45 @@ fingerprint/          Go: records the machine into every result
 analysis/             Python: reads results, finds the crossover
 ```
 
-## Languages
+## Plumbing
 
-Go for the runner and anything that keeps time under load. Python for the
-analysis and the reports. A variant is written in whatever language the
-question is about.
+**None of this is new doctrine. It is the boring-code baseline applied to
+measurement**, and it is written down only because a benchmark fails quietly
+where ordinary code fails loudly.
+
+`bench.py` is the whole harness: run pinned, gate on the checksum, summarise,
+write the record. One file, standard library only, `uv run bench.py`. The
+benchmark programs do the measuring — if the harness grows past one screen,
+something that belongs in a variant has leaked into it.
+
+Make is the uniform interface and never the logic: `make bench` means the same
+thing in every measurement, and a recipe is one command that calls Python. The
+moment a recipe wants an `if`, a loop or a pipe, it belongs in Python. **No
+bash scripts.**
+
+Go for anything that must keep time under load. A variant is written in
+whatever language the question is about.
+
+## Rules that decide whether a number is real
+
+- **Pin the cores, or you measured the scheduler.** Not a tuning option. In
+  rsx, pinning alone cut a transport's high tail from 17.3 to 13.6 µs and its
+  spread by 38%, which reversed the published conclusion — the original
+  "casting adds 8 µs of protocol work" was thread migration. `bench.py` raises
+  rather than running unpinned, because an unpinned run looks identical after
+  the fact.
+- **Align the payload across the whole comparison set**, so the table is
+  apples to apples rather than one row measuring a different thing.
+- **Low, median and high. Never a mean alone.** The spread is itself a
+  finding, and a wide one usually names the scheduler rather than the code.
+- **A contended host produces `status: structure`, never a baseline**, and the
+  file says which it is. The load average at start goes in the frontmatter.
+- **Record the commit that changed the method and keep the superseded numbers
+  beside the new ones**, so a correction can be audited instead of believed.
+- **Prove identical work.** Variants fold their work into a checksum and the
+  run refuses to report when the checksums differ.
+- **Keep the loser's documented fix in the table.** A comparison that omits
+  the other side's official remedy is a strawman, not a measurement.
 
 ## Config
 

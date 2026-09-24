@@ -46,7 +46,7 @@ projects/NN-slug/
 ```sh
 make fingerprint   record this machine into results/
 make               format, build, lint, fast test
-make bench         run a measurement: make bench M=01-microservice-cost/01-in-process-coordination
+make bench         run a measurement: make -C projects/<p>/measurements/<m> bench
 make clean         remove generated artifacts
 ```
 

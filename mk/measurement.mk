@@ -43,11 +43,9 @@ test:
 # fingerprint cannot be compared to anything later, so this is not optional.
 bench: build record
 
+# One command, no shell logic. Everything real lives in bench.py.
 record:
-	@mkdir -p $(RESULTS)
-	@$(MAKE) -C $(ROOT) build >/dev/null
-	@$(ROOT)/dist/fingerprint > $(RESULTS)/$(STAMP)-fingerprint.json
-	@echo "fingerprint recorded: $(RESULTS)/$(STAMP)-fingerprint.json"
+	uv run --project $(ROOT) $(ROOT)/bench.py fingerprint
 
 clean:
 	@:
