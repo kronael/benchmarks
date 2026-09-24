@@ -1,4 +1,4 @@
-# Does a Go channel ever beat an inline serial loop?
+# Step 1 — does a Go channel ever beat an inline serial loop?
 
 ## The axis
 
@@ -25,7 +25,12 @@ Write it here BEFORE the first run, with the reasoning, then do not edit it.
 
 A prediction that was right for the wrong reason is worth more than a number.
 
-## Why this one first
+## What it gives the theme
 
-It needs no toolchain beyond Go, no GPU, and no second language, so it proves
-the harness rather than the question.
+Step 1 of five. This is the floor the other four are measured against: the
+price of talking to yourself, with no boundary yet. Every later step adds one
+crossing, so its cost is the difference from the step before — and all of them
+are differences from this one.
+
+It needs no toolchain beyond Go and no second language, so it proves the
+harness before the question gets hard.

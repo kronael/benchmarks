@@ -1,5 +1,5 @@
 GO ?= go
-EXP ?=
+M ?=
 
 .PHONY: all build lint test fingerprint bench clean
 
@@ -18,10 +18,11 @@ fingerprint: build
 	./dist/fingerprint
 
 bench: build
-	@test -n "$(EXP)" || { echo "usage: make bench EXP=01-channel-vs-serial"; exit 2; }
-	@test -d experiments/$(EXP) || { echo "no such experiment: $(EXP)"; exit 2; }
-	./dist/fingerprint > experiments/$(EXP)/results/fingerprint.json
-	@echo "fingerprint written; run the variant under experiments/$(EXP)"
+	@test -n "$(M)" || { echo "usage: make bench M=<project>/<measurement>"; exit 2; }
+	@test -d projects/$(firstword $(subst /, ,$(M)))/measurements/$(lastword $(subst /, ,$(M))) \
+		|| { echo "no such measurement: $(M)"; exit 2; }
+	./dist/fingerprint > projects/$(firstword $(subst /, ,$(M)))/measurements/$(lastword $(subst /, ,$(M)))/results/fingerprint.json
+	@echo "fingerprint written for $(M)"
 
 clean:
 	rm -f dist/fingerprint

@@ -5,11 +5,15 @@ All benchmarks you always wanted to run.
 Not a benchmark suite for one project. A place to ask a measurable question,
 run it across the variants that matter, and keep what you learned.
 
-## The unit
+## The unit is a project
 
-One question, one axis, N variants. The axis is the single thing that differs;
-everything else is pinned. A lab that varies the language and the algorithm at
-once has measured nothing.
+A project has one main question, and that question is its theme. The question
+is answered by a series of submeasurements, and each submeasurement is a
+benchmark with real code — twin implementations doing byte-identical work,
+proved by a checksum, never a sketch.
+
+A submeasurement follows one axis. Everything else is pinned. A benchmark that
+varies the language and the architecture at once has measured neither.
 
 ## The house rule
 
@@ -17,23 +21,32 @@ once has measured nothing.
 crossover is the finding: at what buffer size, what arity, what core count does
 the winner change. An experiment with results and no `FINDING.md` is unfinished.
 
-## An experiment
+## Layout
 
 ```text
-experiments/NN-slug/
-  QUESTION.md   the ask, the axis, and your prediction written before the run
-  variants/     one directory per implementation
-  sweep.toml    the swept parameter and its range
-  results/      raw, append-only, never edited by hand
-  FINDING.md    where it flipped, and why
+projects/NN-slug/
+  QUESTION.md         the main question, which is the theme
+  FINDING.md          the answer, assembled from the measurements
+  measurements/NN-slug/
+    QUESTION.md       this axis, and the prediction written before the run
+    variants/         twin implementations, mirrored 1:1
+    sweep.toml        the swept parameter and its range
+    results/          raw, append-only, never edited by hand
+    FINDING.md        where it flipped, and what it gives the theme
 ```
+
+## Projects
+
+| project | main question | state |
+|---|---|---|
+| [01-microservice-cost](projects/01-microservice-cost/QUESTION.md) | What does a service boundary cost, and how much comes back without changing language? | open |
 
 ## Running
 
 ```sh
 make fingerprint   record this machine into results/
 make               format, build, lint, fast test
-make bench         run an experiment: make bench EXP=01-channel-vs-serial
+make bench         run a measurement: make bench M=01-microservice-cost/01-in-process-coordination
 make clean         remove generated artifacts
 ```
 
