@@ -108,10 +108,20 @@ whatever language the question is about.
   apples to apples rather than one row measuring a different thing.
 - **Low, median and high. Never a mean alone.** The spread is itself a
   finding, and a wide one usually names the scheduler rather than the code.
-- **Make the machine quiet before you measure.** Stop the other tenants; do
-  not nice around them. Only when the box cannot be quieted does the run get
-  `status: structure` rather than a baseline, and the file says which it is.
-  The load average at start goes in the frontmatter either way.
+- **Wait for the box to be quiet, then take the cores.** This host does go
+  quiet — its 15-minute load sits near 1.5 on two cores, and the spikes are
+  its own test containers and a long-lived dev server. Check the 15-minute
+  average before starting; if it is high, the honest move is to wait or to
+  stop what is running.
+  Then claim the cores rather than asking politely:
+  `sudo chrt -f 80 taskset -c 2,3 <command>`. Plain `nice` cannot go negative
+  for a non-root user, and even `sudo nice -n -20` only biases scheduler
+  weight — it reserves no core, stops no cache eviction, and does nothing for
+  memory bandwidth or interrupts. **It protects the median and leaves the tail
+  exposed**, which is the half these measurements are about.
+  A run started on a loaded box gets `status: structure`, never a baseline,
+  and the file says which. The load average at start is in the frontmatter
+  either way, so the claim can be checked later.
 - **Prove the regime under test was actually entered.** Enough warmup rounds,
   and an independent trace showing the thing happened — the JIT optimised, the
   cache filled, the path went hot. A number from a run that never reached the
