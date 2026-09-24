@@ -1,0 +1,17 @@
+# The swept parameter and its range. First CLI argument to the runner.
+
+[experiment]
+name = "channel-vs-serial"
+axis = "coordination mechanism"
+variants = ["serial", "channel", "mutex"]
+
+[sweep]
+# Work per item, in arbitrary units of the same kernel. The range must cross
+# the point where coordination stops losing.
+parameter = "work_per_item"
+values = [1, 4, 16, 64, 256, 1024, 4096, 16384]
+
+[run]
+items = 1_000_000
+samples = 15
+channel_buffer = 1024
