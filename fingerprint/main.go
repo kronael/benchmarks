@@ -22,6 +22,7 @@ type Fingerprint struct {
 	Turbo      string            `json:"turbo"`
 	LoadAvg    string            `json:"load_avg"`
 	Toolchains map[string]string `json:"toolchains"`
+	GoEnv      map[string]string `json:"go_env"`
 }
 
 // readTrim returns the trimmed contents of path, or "" when it is unreadable.
@@ -55,6 +56,21 @@ func version(name string, args ...string) string {
 	}
 	line, _, _ := strings.Cut(strings.TrimSpace(string(out)), "\n")
 	return strings.TrimSpace(line)
+}
+
+// goEnv reports the effective value of one go env setting. The process
+// environment is not enough: a toolchain line in go.mod or a GOFLAGS file can
+// set these, and the effective value is what the build used.
+func goEnv(key string) string {
+	out, err := exec.Command("go", "env", key).CombinedOutput()
+	if err != nil {
+		return "absent"
+	}
+	value := strings.TrimSpace(string(out))
+	if value == "" {
+		return "unset"
+	}
+	return value
 }
 
 // turboState reads whichever boost knob this CPU publishes. Intel inverts the
@@ -93,6 +109,11 @@ func main() {
 			"java":   version("java", "-version"),
 			"python": version("python3", "--version"),
 			"gcc":    version("gcc", "--version"),
+		},
+		GoEnv: map[string]string{
+			"GOEXPERIMENT": goEnv("GOEXPERIMENT"),
+			"GOTOOLCHAIN":  goEnv("GOTOOLCHAIN"),
+			"GOAMD64":      goEnv("GOAMD64"),
 		},
 	}
 	enc := json.NewEncoder(os.Stdout)
