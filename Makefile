@@ -1,7 +1,6 @@
 GO ?= go
-M ?=
 
-.PHONY: all build lint test fingerprint bench clean
+.PHONY: all build lint test fingerprint clean
 
 all: build lint test
 
@@ -17,12 +16,10 @@ test:
 fingerprint: build
 	./dist/fingerprint
 
-bench: build
-	@test -n "$(M)" || { echo "usage: make bench M=<project>/<measurement>"; exit 2; }
-	@test -d projects/$(firstword $(subst /, ,$(M)))/measurements/$(lastword $(subst /, ,$(M))) \
-		|| { echo "no such measurement: $(M)"; exit 2; }
-	./dist/fingerprint > projects/$(firstword $(subst /, ,$(M)))/measurements/$(lastword $(subst /, ,$(M)))/results/fingerprint.json
-	@echo "fingerprint written for $(M)"
+# A measurement is run from its own directory, so its sweep.toml, variants and
+# results stay together:
+#
+#   make -C projects/<project>/measurements/<measurement> bench
 
 clean:
 	rm -f dist/fingerprint

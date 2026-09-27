@@ -124,9 +124,7 @@ def main() -> None:
     if args.quick:
         sizes = sizes[:6]
         cfg["run"] = dict(cfg["run"], element_visits=100_000, samples=3, warmup_samples=1)
-    # Read before measuring: the load that decides whether this is a baseline is
-    # the load the run started under, not the one it leaves behind.
-    load15 = float(Path("/proc/loadavg").read_text().split()[2])
+    load15 = bench.load15()
 
     summary: dict[str, dict[int, dict]] = {}
     checksums: dict[int, dict[str, str]] = {n: {} for n in sizes}
@@ -147,12 +145,11 @@ def main() -> None:
         for label in summary:
             rows[f"n={n} {label}"] = summary[label][n]
 
-    status = "verified" if load15 <= cfg["run"]["max_load_15m"] else "structure"
     title = f"{cfg['experiment']['name']}-{datetime.now(timezone.utc):%H%M}"
-    out = bench.record(HERE / "results", title, rows, cfg["run"]["cores"], SOURCES, status)
+    out = bench.record(HERE / "results", title, rows, cfg["run"]["cores"], SOURCES, load15)
     crossover(sizes, summary, cfg)
-    print(f"\nwrote {out} as {status}, 15-minute load {load15} against a limit of "
-          f"{cfg['run']['max_load_15m']}")
+    print(f"\nwrote {out}, 15-minute load {load15:.2f} at the start against a "
+          f"limit of {bench.QUIET_LOAD_15}")
 
 
 if __name__ == "__main__":

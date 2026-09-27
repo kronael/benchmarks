@@ -3,7 +3,7 @@
 Open defects, recorded on discovery and not fixed in the same breath. A fix
 needs its own pass, so the record stays honest about what is still wrong.
 
-## Open
+## Method document
 
 ### The documented pin names cores that do not exist (2026-09-27)
 
@@ -17,57 +17,41 @@ substitution is `-c 0,1`, which pins the same way against the cores that are
 here. Two agents reached this independently.
 
 Only the core list is wrong. `sudo -n chrt -f 80 taskset -c 0,1 true` returns 0
-once the Bash sandbox is off, so real-time priority stays available. Both
-agents reported `sudo` as blocked; that was their own sandbox, and taking the
-fallback would have left the tail unprotected.
+once the Bash sandbox is off, so real-time priority stays available.
 
 Fixing `CLAUDE.md` changes the method statement, so it waits for sign-off.
 
-### make record writes the fingerprint to stdout and not into results (2026-09-27)
+### The load gate cannot tell my own run from someone else's (2026-09-27)
 
-`mk/measurement.mk` defines `record` as
-`uv run --project $(ROOT) $(ROOT)/bench.py fingerprint`, which prints to
-stdout. Nothing lands in `results/`. A result file therefore carries its
-machine only when the caller redirects the whole of `make bench`.
+`bench.QUIET_LOAD_15` compares the 15-minute average against 1.6, and that
+average includes the benchmark runs this repository just finished. Four
+measurements run back to back therefore file the later ones as `structure` on
+the strength of their own predecessors, which is not the contention the rule was
+written about.
 
-`CLAUDE.md` says the runner writes the fingerprint into every result file and
-never a human. Today the runner does not.
+A run is still never upgraded by this defect, only downgraded, so no number is
+overstated. The fix is either a longer gap between runs or a gate that reads
+only the load outside the pinned cores, and both change the method.
+
+## Measurement 02 — scheduling under load
 
 ### The rsx lift left the Rust variant without its binaries (2026-09-27)
 
-`projects/01-microservice-cost/measurements/02-scheduling-under-load/variants/rust`
-holds only `src/lib.rs`. The four binary sources never came across, so cases
-A, B, P1 and P2 cannot run and the measurement has no cross-language row.
+`variants/rust` holds only `src/lib.rs`. The four binary sources never came
+across, so cases A, B, P1 and P2 cannot run and the measurement has no
+cross-language row. Case C, which is the axis this measurement predicts, is
+Go-only and unaffected.
 
-### The checksum gate passes when a workload holds one row (2026-09-27)
+The checksum gate now refuses these cases rather than passing them: a workload
+that reaches the gate with one row raises. Before that, every case A and case B
+workload reported green while comparing nothing.
 
-`run.py` in measurement 02 gates on `len(sums) > 1`, so a workload with a
-single row is reported green while it compares nothing. With the Rust binaries
-missing, every case A and case B workload passes without proving identical
-work. This is the failure mode `CLAUDE.md` warns about: a benchmark fails
-quietly where ordinary code fails loudly.
-
-### The lint recipe cannot fail on a formatting hit (2026-09-27)
-
-Measurements 02 and 04 both run `gofmt -l . && go vet ./...`. `gofmt -l` lists
-unformatted files and exits 0, so the recipe reports green while the tree is
-unformatted. Only `go vet` can fail it.
-
-The fix belongs in Python, not in the recipe, because `CLAUDE.md` says Make
-holds no logic. Measurement 04 mirrored 02 rather than add shell logic, which
-was the right call and spread the defect.
+## Toolchain
 
 ### staticcheck cannot read go1.27 export data (2026-09-27)
 
 The copy of staticcheck on this host fails with "export data version 4 is
 greater than maximum supported version 2" against the pinned go1.27.1
-toolchain. Measurement 03 therefore left it out of `make lint`, which leaves
-every measurement with a formatter and `go vet` only.
+toolchain, so `lint.py` runs `gofmt` and `go vet` only.
 
 Either upgrade staticcheck or say in the method that `go vet` is the analyser.
-
-### The project FINDING names five steps and four exist (2026-09-27)
-
-`projects/01-microservice-cost/FINDING.md` says "Missing: all five steps".
-`measurements/` holds four directories. Either a measurement is unwritten or
-the count is wrong.

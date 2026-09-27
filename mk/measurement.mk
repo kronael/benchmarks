@@ -16,10 +16,10 @@ export GOTOOLCHAIN := go1.27.1
 export GOEXPERIMENT := simd
 
 ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST)))/..)
+LINT := $(ROOT)/lint.py
 RESULTS := results
-STAMP := $(shell date -u +%Y%m%d)
 
-.PHONY: all prepare build lint test bench record clean help
+.PHONY: all prepare build lint test bench clean help
 
 all: build lint test
 
@@ -45,13 +45,12 @@ lint:
 test:
 	@echo "no test defined for $(MEASUREMENT)" >&2; exit 2
 
-# bench always records the machine beside the numbers. A result without its
-# fingerprint cannot be compared to anything later, so this is not optional.
-bench: build record
-
-# One command, no shell logic. Everything real lives in bench.py.
-record:
-	uv run --project $(ROOT) $(ROOT)/bench.py fingerprint
+# The record is written by bench.record inside the measurement's run.py, which
+# is the only place a result file is allowed to come from: it writes the machine
+# fingerprint and the starting load into the same file as the numbers. There is
+# deliberately no separate record target, because one that printed a fingerprint
+# to stdout would look like the guarantee without being it.
+bench: build
 
 clean:
 	@:

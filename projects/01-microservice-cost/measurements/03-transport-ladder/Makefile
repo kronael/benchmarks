@@ -14,14 +14,12 @@ build:
 # read go1.27 export data ("export data version 4 is greater than maximum
 # supported version 2"), so adding it would make lint fail on every run.
 lint:
-	cd variants/go && gofmt -l .
-	cd variants/go && go vet ./...
-	uvx ruff@0.14.3 check run.py variants/python
+	$(LINT) variants/go run.py variants/python
 
 test:
 	./run.py sweep.toml --quick
 
-bench: build record
+bench: build
 	./run.py sweep.toml
 
 clean:

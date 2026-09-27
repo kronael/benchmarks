@@ -30,6 +30,3 @@ warmup_samples = 3
 # One core, because the kernel is single-threaded, and core 0 is left to the
 # rest of the box. bench.py raises rather than running unpinned.
 cores = [1]
-# Above this 15-minute load average the run is filed as structure, never a
-# baseline. This host idles near 1.5 on two cores.
-max_load_15m = 1.6

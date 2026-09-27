@@ -12,15 +12,14 @@ build:
 	./run.py --cases A,B,C --build-only
 
 lint:
-	cd variants/go && gofmt -l . && go vet ./...
-	cd variants/rust && cargo fmt --check && cargo clippy -- -D warnings
+	$(LINT) variants/go variants/rust
 
 test:
 	./run.py --quick --cases C
 
 # Cases A and B need the Rust binaries restored first: variants/rust holds only
 # src/lib.rs, so `--cases A,B` cannot run here yet.
-bench: build record
+bench: build
 	./run.py --cases C
 
 clean:

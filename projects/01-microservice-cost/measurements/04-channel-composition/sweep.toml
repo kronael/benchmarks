@@ -41,10 +41,6 @@ reps = 7
 # run unpinned, and a loaded run is still filed as structure.
 cores = [0, 1]
 sample_every = 64
-# A run started above this 15-minute load average is filed as structure rather
-# than as a baseline, and the result file says which. This host's quiet state is
-# near 1.5 on two cores.
-quiet_load_15 = 2.0
 # The medium-effort row's two documented remedies, and nothing else.
 buffer = 8
 batch = 32

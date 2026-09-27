@@ -30,9 +30,6 @@ reps = 3
 # 2,3 in the repo CLAUDE.md does not exist here.
 server_core = 0
 client_core = 1
-# Above this 15-minute load average the run is filed as status: structure
-# instead of a baseline, and the result file says which.
-quiet_load15 = 0.5
 
 [quick]
 # make test: proves every row still agrees on the checksum, in under five

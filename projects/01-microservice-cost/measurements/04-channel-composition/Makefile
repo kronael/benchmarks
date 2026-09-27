@@ -5,13 +5,13 @@ build:
 	cd variants/go && go build -o ../../bin/ ./...
 
 lint:
-	cd variants/go && gofmt -l . && go vet ./...
+	$(LINT) variants/go
 
 test:
 	cd variants/go && go test ./...
 	./run.py sweep.toml --quick
 
-bench: build record
+bench: build
 	./run.py sweep.toml
 
 clean:

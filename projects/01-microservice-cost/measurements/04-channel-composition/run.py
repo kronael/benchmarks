@@ -12,7 +12,6 @@ printed at all.
 """
 
 import argparse
-import os
 import statistics
 import sys
 import tomllib
@@ -73,6 +72,7 @@ def main():
         points, reps = [cfg["quick"]], cfg["quick"]["reps"]
     cores = run["cores"]
 
+    load15_at_start = bench.load15()
     rows, detail = {}, {}
     for point in points:
         flags = [f"-depth={graph['depth']}", f"-width={graph['width']}",
@@ -99,14 +99,13 @@ def main():
         print(f"every composition folded to the same checksum at work={points[0]['work']}")
         return
 
-    load15 = os.getloadavg()[2]
-    status = "verified" if load15 <= run["quiet_load_15"] else "structure"
     out = bench.record(HERE / "results", cfg["experiment"]["name"], rows, cores,
-                       sources=["variants/go", "sweep.toml", "QUESTION.md"], status=status)
+                       sources=["variants/go", "sweep.toml", "QUESTION.md"],
+                       load15_at_start=load15_at_start)
     with out.open("a") as handle:
         handle.write(detail_table(detail, reps))
-    print(f"15-minute load {load15:.2f} at the end of the run, so status: {status}")
-    print(f"wrote {out}")
+    print(f"wrote {out}, 15-minute load {load15_at_start:.2f} at the start against a "
+          f"limit of {bench.QUIET_LOAD_15}")
 
 
 if __name__ == "__main__":

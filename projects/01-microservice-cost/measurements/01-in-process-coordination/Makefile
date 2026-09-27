@@ -5,12 +5,12 @@ build:
 	./run.py --build
 
 lint:
-	cd variants/go && gofmt -l . && go vet ./...
+	$(LINT) variants/go
 
 test:
 	cd variants/go && go test ./...
 
-bench: build record
+bench: build
 	./run.py
 
 clean:
