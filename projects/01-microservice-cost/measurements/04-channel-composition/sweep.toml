@@ -1,0 +1,57 @@
+# The swept parameter and its range. First CLI argument to the runner.
+
+[experiment]
+name = "channel-composition"
+axis = "composition structure"
+variants = ["direct", "direct-parallel", "channel", "channel-batched"]
+
+[graph]
+# Pinned shape. 26 nodes, and 52 channel messages per tick in the channel
+# compositions: deep and wide enough that scheduling and allocation decide the
+# answer rather than a three-node toy.
+depth = 6
+width = 4
+fanout = 2
+
+[sweep]
+# Kernel iterations per node per tick. One iteration is ~1.6 ns on this class of
+# core, so the range runs a node from ~5 ns to ~26 us of work and brackets the
+# channel handoff cost from both sides. Ticks fall as work rises so that one
+# repetition stays near a third of a second at every point; they stay multiples
+# of the batch so no partial batch is ever flushed.
+parameter = "work"
+points = [
+  { work = 1, ticks = 65536 },
+  { work = 4, ticks = 65536 },
+  { work = 16, ticks = 32768 },
+  { work = 64, ticks = 16384 },
+  { work = 256, ticks = 8192 },
+  { work = 1024, ticks = 4096 },
+  { work = 4096, ticks = 2048 },
+  { work = 16384, ticks = 512 },
+]
+
+[run]
+# One discarded warmup repetition per row, then this many measured ones.
+reps = 7
+# This container's cpuset is 0-1 host-wide (/proc/1/status agrees), so 0,1 is
+# the only mask taskset accepts here and CLAUDE.md's `-c 2,3` is refused. Pinning
+# to the whole cpuset stops nothing from sharing the cores: it forbids migration
+# out of a set the process could not leave anyway. The harness still refuses to
+# run unpinned, and a loaded run is still filed as structure.
+cores = [0, 1]
+sample_every = 64
+# A run started above this 15-minute load average is filed as structure rather
+# than as a baseline, and the result file says which. This host's quiet state is
+# near 1.5 on two cores.
+quiet_load_15 = 2.0
+# The medium-effort row's two documented remedies, and nothing else.
+buffer = 8
+batch = 32
+
+[quick]
+# make test: every composition once at a shape small enough to finish in well
+# under a second, for the checksum gate rather than for a number.
+work = 8
+ticks = 2048
+reps = 1
