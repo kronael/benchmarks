@@ -72,7 +72,7 @@ def main():
         points, reps = [cfg["quick"]], cfg["quick"]["reps"]
     cores = run["cores"]
 
-    load15_at_start = bench.load15()
+    machine = bench.before(cores)
     rows, detail = {}, {}
     for point in points:
         flags = [f"-depth={graph['depth']}", f"-width={graph['width']}",
@@ -101,11 +101,12 @@ def main():
 
     out = bench.record(HERE / "results", cfg["experiment"]["name"], rows, cores,
                        sources=["variants/go", "sweep.toml", "QUESTION.md"],
-                       load15_at_start=load15_at_start)
+                       before=machine)
     with out.open("a") as handle:
         handle.write(detail_table(detail, reps))
-    print(f"wrote {out}, 15-minute load {load15_at_start:.2f} at the start against a "
-          f"limit of {bench.QUIET_LOAD_15}")
+    print(f"wrote {out}, 15-minute load {machine['load15']:.2f} at the start against a "
+          f"limit of {bench.QUIET_LOAD_15}, pinned cores "
+          f"{machine['busy_on_pinned_cores']:.1%} busy")
 
 
 if __name__ == "__main__":

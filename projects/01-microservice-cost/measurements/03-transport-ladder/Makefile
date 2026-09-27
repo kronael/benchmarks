@@ -19,7 +19,7 @@ lint:
 test:
 	./run.py sweep.toml --quick
 
-bench: build
+bench:
 	./run.py sweep.toml
 
 clean:

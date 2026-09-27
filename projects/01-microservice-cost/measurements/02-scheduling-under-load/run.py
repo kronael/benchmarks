@@ -211,7 +211,7 @@ def main():
     if args.build_only:
         return
 
-    load15_at_start = bench.load15()
+    machine = bench.before(CORES)
     rows, recorded, checksums = [], {}, {}
     for case, label, binary, extra_env in matrix:
         extra_env = dict(short, **extra_env)
@@ -247,11 +247,12 @@ def main():
 
     out = bench.record(HERE / "results", spec["experiment"]["name"], recorded, CORES,
                        sources=["variants/go", "sweep.toml", "notes/design.md"],
-                       load15_at_start=load15_at_start)
+                       before=machine)
     with out.open("a") as handle:
         handle.write(detail_table(rows, reps))
-    print(f"wrote {out}, 15-minute load {load15_at_start:.2f} at the start against a "
-          f"limit of {bench.QUIET_LOAD_15}")
+    print(f"wrote {out}, 15-minute load {machine['load15']:.2f} at the start against a "
+          f"limit of {bench.QUIET_LOAD_15}, pinned cores "
+          f"{machine['busy_on_pinned_cores']:.1%} busy")
 
 
 if __name__ == "__main__":

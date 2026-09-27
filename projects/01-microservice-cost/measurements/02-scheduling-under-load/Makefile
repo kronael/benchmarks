@@ -19,8 +19,8 @@ test:
 
 # Cases A and B need the Rust binaries restored first: variants/rust holds only
 # src/lib.rs, so `--cases A,B` cannot run here yet.
-bench: build
-	./run.py --cases C
+bench:
+	./run.py --cases C --no-build
 
 clean:
 	cd variants/rust && cargo clean

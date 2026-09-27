@@ -19,6 +19,7 @@ import os
 import shutil
 import subprocess
 import sys
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 from statistics import median
@@ -52,6 +53,40 @@ def run(command: list[str], cwd: Path | None = None, cores: list[int] | None = N
 def load15() -> float:
     """The 15-minute load average. Read it before the run it judges, never after."""
     return os.getloadavg()[2]
+
+
+def _jiffies(cores: list[int]) -> tuple[int, int]:
+    """Busy and total jiffies across the named CPUs, from /proc/stat."""
+    wanted = {f"cpu{c}" for c in cores}
+    busy = idle = 0
+    for line in Path("/proc/stat").read_text().splitlines():
+        fields = line.split()
+        if fields[0] in wanted:
+            values = [int(v) for v in fields[1:]]
+            idle += values[3] + values[4]
+            busy += sum(values) - values[3] - values[4]
+    return busy, busy + idle
+
+
+def contention(cores: list[int], window: float = 1.0) -> float:
+    """Busy fraction of the pinned cores, sampled before the run that it judges.
+
+    /proc/loadavg is the host's and counts CPUs this cpuset cannot use, so it is
+    not commensurable with a two-core slice. Measured here: a host load of 36
+    over pinned cores that were 17% idle, of which the benchmark itself held 14%
+    and a neighbour 69%. Per-CPU time is commensurable, and sampled before the
+    benchmark starts it measures the neighbours rather than the benchmark.
+    """
+    was = _jiffies(cores)
+    time.sleep(window)
+    now = _jiffies(cores)
+    busy, total = now[0] - was[0], now[1] - was[1]
+    return busy / total if total else 0.0
+
+
+def before(cores: list[int]) -> dict[str, float]:
+    """Every machine reading that must be taken BEFORE the run, never after."""
+    return {"load15": load15(), "busy_on_pinned_cores": contention(cores)}
 
 
 def gate(checksums: dict[str, object]) -> None:
@@ -89,25 +124,29 @@ def fingerprint() -> dict:
 
 
 def record(results: Path, title: str, rows: dict[str, dict], cores: list[int],
-           sources: list[str], load15_at_start: float) -> Path:
+           sources: list[str], before: dict[str, float]) -> Path:
     """Write one dated result file and return its path.
 
-    The load average decides the status, and it is the load the run STARTED
-    under: a quiet start that ends loud is still a baseline, and a loaded start
-    is structure however quiet the finish. QUIET_LOAD_15 is that limit for the
-    whole repository, so no measurement can set itself an easier one.
+    `before` comes from before(), taken ahead of the run: a quiet start that ends
+    loud is still a baseline, and a loaded start is structure however quiet the
+    finish. QUIET_LOAD_15 is the one limit for the whole repository, so no
+    measurement can set itself an easier one. The busy fraction of the pinned
+    cores is recorded beside it but does not yet decide the status; BUGS.md
+    carries that proposal.
     """
     machine = fingerprint()
     stamp = datetime.now(timezone.utc)
-    status = "verified" if load15_at_start <= QUIET_LOAD_15 else "structure"
+    status = "verified" if before["load15"] <= QUIET_LOAD_15 else "structure"
     results.mkdir(parents=True, exist_ok=True)
     out = results / f"{stamp:%Y%m%d}-{title}.md"
     head = {
         "title": title, "date": f"{stamp:%Y-%m-%d}", "status": status,
         "host": machine.get("cpu_model", "unknown"), "cpus": machine.get("cpus"),
         "kernel": machine.get("kernel"), "governor": machine.get("governor") or "unreadable",
-        "turbo": machine.get("turbo"), "load_at_start": f"{load15_at_start:.2f}",
-        "load_limit": QUIET_LOAD_15, "load_at_end": machine.get("load_avg"),
+        "turbo": machine.get("turbo"), "load_at_start": f"{before['load15']:.2f}",
+        "load_limit": QUIET_LOAD_15,
+        "load_at_end": " ".join(machine.get("load_avg", "").split()[:3]),
+        "busy_on_pinned_cores_at_start": f"{before['busy_on_pinned_cores']:.1%}",
         "pinned_cores": cores,
     }
     lines = ["---", *(f"{k}: {v}" for k, v in head.items()), "sources:",

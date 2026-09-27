@@ -21,17 +21,32 @@ once the Bash sandbox is off, so real-time priority stays available.
 
 Fixing `CLAUDE.md` changes the method statement, so it waits for sign-off.
 
-### The load gate cannot tell my own run from someone else's (2026-09-27)
+### The load gate reads a number that is not about the pinned cores (2026-09-27)
 
-`bench.QUIET_LOAD_15` compares the 15-minute average against 1.6, and that
-average includes the benchmark runs this repository just finished. Four
-measurements run back to back therefore file the later ones as `structure` on
-the strength of their own predecessors, which is not the contention the rule was
-written about.
+`bench.QUIET_LOAD_15` gates on `/proc/loadavg`, which is the host's and is not
+namespaced. It counts runnable tasks across every CPU the host has, while a
+measurement runs inside this container's two-CPU cpuset. The two numbers are not
+commensurable, and measurement disproves the assumption that they track:
 
-A run is still never upgraded by this defect, only downgraded, so no number is
-overstated. The fix is either a longer gap between runs or a gate that reads
-only the load outside the pinned cores, and both change the method.
+| moment | host load 15m | pinned cores 0-1 |
+|---|---:|---|
+| during measurement 02 | 36.2 | 17% idle, zero steal, 14% of capacity mine |
+| during measurement 02, later | 10.6 | 76% busy |
+
+A host load of 36 said nothing about cores 0-1, and the 69% of those two cores
+that a neighbour held is invisible in the load average. The gate also counts this
+repository's own finished runs, so four measurements in a row downgrade each
+other.
+
+`bench.contention()` now samples the busy fraction of the pinned cores before the
+run and every result file carries it as `busy_on_pinned_cores_at_start`. It does
+NOT yet decide the status.
+
+**Proposal, needs sign-off.** Gate on `busy_on_pinned_cores_at_start` instead of
+the host load average, at roughly 10%, and keep the load average as fingerprint
+only. This changes the method statement in `CLAUDE.md`, which is why it is a
+proposal: every result recorded so far is labelled by the old gate, and the two
+labels do not agree.
 
 ## Measurement 02 — scheduling under load
 

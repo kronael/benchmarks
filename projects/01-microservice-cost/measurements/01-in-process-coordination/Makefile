@@ -10,7 +10,7 @@ lint:
 test:
 	cd variants/go && go test ./...
 
-bench: build
+bench:
 	./run.py
 
 clean:

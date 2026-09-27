@@ -29,7 +29,7 @@ help:
 	@echo "  make build     build every variant"
 	@echo "  make lint      format check and static analysis"
 	@echo "  make test      fast correctness check, under five seconds"
-	@echo "  make bench     run the measurement and record it"
+	@echo "  make bench     run the already-built measurement and record it"
 	@echo "  make clean     remove build output, keep results"
 
 # Variants that need no preparation override nothing.
@@ -45,12 +45,17 @@ lint:
 test:
 	@echo "no test defined for $(MEASUREMENT)" >&2; exit 2
 
-# The record is written by bench.record inside the measurement's run.py, which
-# is the only place a result file is allowed to come from: it writes the machine
-# fingerprint and the starting load into the same file as the numbers. There is
-# deliberately no separate record target, because one that printed a fingerprint
-# to stdout would look like the guarantee without being it.
-bench: build
+# bench does NOT depend on build, and that is deliberate twice over. A measured
+# run is started under `sudo chrt`, where GOTOOLCHAIN cannot resolve the pinned
+# toolchain from root's HOME, so compiling there builds a different binary or
+# fails outright. A run that compiles also measures the build cache. Run
+# `make build` first; bench raises on a missing binary rather than making one.
+#
+# The record is written by bench.record inside the measurement's run.py, which is
+# the only place a result file comes from: it writes the machine fingerprint and
+# the starting load into the same file as the numbers.
+bench:
+	@echo "no bench step defined for $(MEASUREMENT)" >&2; exit 2
 
 clean:
 	@:

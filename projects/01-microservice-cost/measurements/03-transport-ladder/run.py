@@ -122,7 +122,7 @@ def load(config_path: Path, quick: bool) -> tuple[list[int], dict]:
 
 
 def report(cells: dict, values: list[int], run_cfg: dict, quick: bool,
-           wanted: list[str], load15_at_start: float) -> None:
+           wanted: list[str], machine: dict[str, float]) -> None:
     """Print the ladder, then write the dated result file through bench.py."""
     matrix = [row for row in MATRIX if row[1] in wanted]
     header = "| rung | row | effort | " + " | ".join(f"{v}B p50/p99 µs" for v in values) + " |"
@@ -154,7 +154,7 @@ def report(cells: dict, values: list[int], run_cfg: dict, quick: bool,
         HERE / "results", "transport-ladder-rtt-us", rows,
         [run_cfg["server_core"], run_cfg["client_core"]],
         sources=["variants/go", "variants/python", "sweep.toml", "notes/design.md"],
-        load15_at_start=load15_at_start,
+        before=machine,
     )
     tail = ["", "| rung | row | effort | payload | p50 µs | p99 µs | p99.9 µs | checksum |",
             "|---|---|---|---:|---:|---:|---:|---|"]
@@ -182,7 +182,7 @@ def main() -> None:
     values, run_cfg = load(Path(args.config), args.quick)
     wanted = args.rows.split(",") if args.rows else [row[1] for row in MATRIX]
 
-    load15_at_start = bench.load15()
+    machine = bench.before([run_cfg["server_core"], run_cfg["client_core"]])
     cells = {}
     for payload in values:
         for row in MATRIX:
@@ -193,7 +193,7 @@ def main() -> None:
         agreed = {cells[(row[1], row[2], payload)]["checksum"] for row in MATRIX if row[1] in wanted}
         if len(agreed) > 1:
             raise RuntimeError(f"rows did not do identical work at {payload}B: {sorted(agreed)}")
-    report(cells, values, run_cfg, args.quick, wanted, load15_at_start)
+    report(cells, values, run_cfg, args.quick, wanted, machine)
 
 
 if __name__ == "__main__":
