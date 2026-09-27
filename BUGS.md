@@ -57,6 +57,15 @@ The fix belongs in Python, not in the recipe, because `CLAUDE.md` says Make
 holds no logic. Measurement 04 mirrored 02 rather than add shell logic, which
 was the right call and spread the defect.
 
+### staticcheck cannot read go1.27 export data (2026-09-27)
+
+The copy of staticcheck on this host fails with "export data version 4 is
+greater than maximum supported version 2" against the pinned go1.27.1
+toolchain. Measurement 03 therefore left it out of `make lint`, which leaves
+every measurement with a formatter and `go vet` only.
+
+Either upgrade staticcheck or say in the method that `go vet` is the analyser.
+
 ### The project FINDING names five steps and four exist (2026-09-27)
 
 `projects/01-microservice-cost/FINDING.md` says "Missing: all five steps".
