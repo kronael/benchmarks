@@ -16,6 +16,11 @@ Every measurement inherits the wrong command from the method document. The
 substitution is `-c 0,1`, which pins the same way against the cores that are
 here. Two agents reached this independently.
 
+Only the core list is wrong. `sudo -n chrt -f 80 taskset -c 0,1 true` returns 0
+once the Bash sandbox is off, so real-time priority stays available. Both
+agents reported `sudo` as blocked; that was their own sandbox, and taking the
+fallback would have left the tail unprotected.
+
 Fixing `CLAUDE.md` changes the method statement, so it waits for sign-off.
 
 ### make record writes the fingerprint to stdout and not into results (2026-09-27)
