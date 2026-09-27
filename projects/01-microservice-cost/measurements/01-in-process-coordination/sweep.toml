@@ -1,17 +1,35 @@
-# The swept parameter and its range. First CLI argument to the runner.
+# The swept parameter and its range. First CLI argument to run.py.
 
 [experiment]
-name = "channel-vs-serial"
-axis = "coordination mechanism"
-variants = ["serial", "channel", "mutex"]
+name = "scalar-vs-simd-divto"
+axis = "whether the work unit is vectorised"
+kernel = "gonum floats.DivTo, dst[i] = x[i] / y[i]"
+variants = ["scalar", "simd"]
+# The build the box gives you, then Go's own documented remedy for the scalar
+# side. Both variants are built at both, so no row is a strawman.
+goamd64 = ["v1", "v3"]
 
 [sweep]
-# Work per item, in arbitrary units of the same kernel. The range must cross
-# the point where coordination stops losing.
-parameter = "work_per_item"
-values = [1, 4, 16, 64, 256, 1024, 4096, 16384]
+# Elements in one work unit. Three float64 arrays, so the working set is 24
+# bytes per element: 64 KiB L1d at ~2.7k, 512 KiB L2 at ~21k, 16 MiB L3 at
+# ~700k. The range brackets every one of those, one vector (4 lanes) at the
+# bottom and DRAM at the top, so both ends of the ordering are inside it.
+# 3 and 5 are here to price the vector tail, which is masked and pads with zero.
+parameter = "elements"
+values = [1, 2, 3, 4, 5, 8, 16, 64, 256, 1024, 4096, 16384, 65536, 262144, 1048576, 4194304]
 
 [run]
-items = 1_000_000
-samples = 15
-channel_buffer = 1024
+# Every size does the same number of element visits, so one sample is the same
+# amount of arithmetic everywhere in the sweep and ns/element compares directly
+# across it. repeat = max(1, element_visits / elements).
+element_visits = 16_000_000
+samples = 11
+# Discarded. No JIT here, but the first pass over a fresh array pays its page
+# faults and its cache misses, and that is not the steady state.
+warmup_samples = 3
+# One core, because the kernel is single-threaded, and core 0 is left to the
+# rest of the box. bench.py raises rather than running unpinned.
+cores = [1]
+# Above this 15-minute load average the run is filed as structure, never a
+# baseline. This host idles near 1.5 on two cores.
+max_load_15m = 1.6
