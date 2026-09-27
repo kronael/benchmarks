@@ -47,6 +47,16 @@ missing, every case A and case B workload passes without proving identical
 work. This is the failure mode `CLAUDE.md` warns about: a benchmark fails
 quietly where ordinary code fails loudly.
 
+### The lint recipe cannot fail on a formatting hit (2026-09-27)
+
+Measurements 02 and 04 both run `gofmt -l . && go vet ./...`. `gofmt -l` lists
+unformatted files and exits 0, so the recipe reports green while the tree is
+unformatted. Only `go vet` can fail it.
+
+The fix belongs in Python, not in the recipe, because `CLAUDE.md` says Make
+holds no logic. Measurement 04 mirrored 02 rather than add shell logic, which
+was the right call and spread the defect.
+
 ### The project FINDING names five steps and four exist (2026-09-27)
 
 `projects/01-microservice-cost/FINDING.md` says "Missing: all five steps".
