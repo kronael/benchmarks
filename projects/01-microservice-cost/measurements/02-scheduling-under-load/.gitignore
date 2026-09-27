@@ -1,0 +1,3 @@
+# Build output. `make build` fills bin/ so the pinned run can use --no-build.
+/bin/
+/variants/rust/target/

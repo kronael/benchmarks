@@ -1,0 +1,49 @@
+# The swept parameter and its range, for case C. run.py reads this file and
+# builds the case C matrix from it, so the sweep lives in one place.
+#
+# Cases A and B are not swept: they are the inherited cross-language rows and
+# their operating points are fixed in run.py's matrix, as in the rsx harness.
+
+[experiment]
+name = "receiver-width-under-contention"
+axis = "width of the receiver's own work, contention source pinned"
+case = "C"
+
+# Each variant is one row at every swept value. A plain list of names cannot
+# carry the binary and the environment that make a row what it is, so these are
+# tables.
+[[variants]]
+label = "scalar v1"
+binary = "go-casec"
+width = "scalar"
+
+[[variants]]
+label = "scalar v3"
+binary = "go-casec-v3"
+width = "scalar"
+
+[[variants]]
+label = "simd"
+binary = "go-casec"
+width = "simd"
+
+[sweep]
+# One burst per this many requests, at 50k req/s. A burst is ~100ms of scalar
+# splitmix64, identical in every row, so the values are burst rates: 2, 4, 8,
+# 12, 16 and 20 per second. Capacity is 2.0 cores, and the range spans about
+# 35% to 125% of it, which puts the knee inside the sweep instead of at its
+# edge. See QUESTION.md for the offered-load table.
+parameter = "heavy_every"
+values = [25000, 12500, 6250, 4166, 3125, 2500]
+
+[run]
+# 12s of traffic, the first second excluded, released open-loop on a 1ms tick.
+total = 600_000
+reps = 5
+# make test overrides all three: enough traffic to run every path and prove the
+# three widths fold to the same checksum, not enough to measure anything. The
+# burst rate is raised and the burst shortened so 20 of them fire inside 200ms
+# of arrivals — coverage of the heavy path, not a contention level.
+quick_total = 10_000
+quick_heavy_every = 500
+quick_heavy_iters = 800_000

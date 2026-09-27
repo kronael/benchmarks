@@ -5,19 +5,23 @@ prepare:
 	cd variants/go && go mod download
 	cd variants/rust && cargo fetch
 
+# One command that calls Python. run.py owns the build because the case C rows
+# need a second Go build at GOAMD64=v3, and because a measured run started
+# under sudo must be able to skip compiling entirely (--no-build).
 build:
-	cd variants/go && go build ./...
-	cd variants/rust && cargo build --release
+	./run.py --cases A,B,C --build-only
 
 lint:
 	cd variants/go && gofmt -l . && go vet ./...
 	cd variants/rust && cargo fmt --check && cargo clippy -- -D warnings
 
 test:
-	./run.py --quick
+	./run.py --quick --cases C
 
+# Cases A and B need the Rust binaries restored first: variants/rust holds only
+# src/lib.rs, so `--cases A,B` cannot run here yet.
 bench: build record
-	./run.py
+	./run.py --cases C
 
 clean:
 	cd variants/rust && cargo clean
