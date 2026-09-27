@@ -1,4 +1,4 @@
-# 02 — the transport ladder
+# 03 — the transport ladder
 
 **What a crossing costs across three realistic stacks**, each at worst case and
 at medium effort.
@@ -7,37 +7,49 @@ at medium effort.
 |---|---|---|
 | 1 | Python to Python, HTTP then WebSocket | the default reach |
 | 2 | Go to Go, gRPC wired the quick way | the common professional answer |
-| 3 | `rsx-cast` | the floor: 8.80 µs p50 RTT at 128 B, at raw UDP |
+| 3 | Go to Go, raw UDP | the floor: no framing, one copy each way |
 
 **Axis:** the stack. It confounds language with transport on purpose, because
 that is how the choice arrives — nobody picks Python then writes a custom UDP
-transport. A control holds one language fixed across transports so the ladder
-splits into the part that is the language and the part that is the wire.
+transport. A control holds Go fixed across transports, and holds stdlib HTTP
+fixed across the two languages, so the ladder splits into the part that is the
+language and the part that is the wire.
 
 **Effort rows:** obvious code, then a working afternoon with the platform's own
 documented remedies. The gap between the two rows is the recoverable cost, and
-it is the number that decides "tune it" against "rewrite it".
+it is the number that decides "tune it" against "rewrite it". Every remedy is
+cited in `notes/design.md`.
 
-**Sweep:** payload size, to find where serialisation overtakes transport.
+**Sweep:** payload size, 128 B to 32 KiB, to find where per-byte work overtakes
+the fixed cost of a crossing. It stops at 32 KiB because 8+32768 has to fit in
+one UDP datagram.
 
-## Drawn from rsx
+**Same work, proved:** every row computes one IEEE CRC-32 over the same payload
+and folds the answer into a checksum. The runner refuses to report unless all
+ten rows agree on it at every payload size — one gate across two languages and
+four transports.
 
-`rsx-cast` supplies rung 3 and its comparison set — MoldUDP64, SoupBinTCP, KCP,
-Aeron, raw UDP — already measured on one harness. Provenance is marked as rsx
-marks it: `[our]`, `[lib]`, `[reimpl]`.
+## What this does not take from rsx
 
-## Prediction
-
-How many multiples separate rung 1 from rung 3? Is the worst-to-medium gap
-inside one rung larger than the gap between two adjacent rungs?
+Rung 3 was drawn up around `rsx-cast` and its 8.80 µs p50 RTT at 128 B. That
+transport is not in this repo, so rung 3 measures the raw-UDP floor it sits on
+rather than quoting a number from somewhere else. The rsx comparison set —
+MoldUDP64, SoupBinTCP, KCP, Aeron — is not reproduced here for the same reason.
+What is adopted from rsx is method, not figures: core pinning, payload
+alignment, the checksum gate and the loser's-fix rule.
 
 ## Running
 
 ```sh
-make prepare   # toolchains and the cast crate
+make prepare   # go mod download, and a venv with websockets for rung 1
+make build
 make bench
 ```
 
+`make bench` writes the machine fingerprint into the result file through the
+repo's `bench.py`, which needs `dist/fingerprint` built at the repo root first.
+
 ## Results
 
-Dated files under `results/`. Not run yet.
+Dated files under `results/`. The question and the prediction are in
+`QUESTION.md`, the reasoning in `notes/design.md`. Not run yet.

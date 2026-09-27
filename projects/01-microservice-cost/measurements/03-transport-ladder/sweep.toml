@@ -1,0 +1,43 @@
+# The swept parameter and its range. First CLI argument to run.py.
+
+[experiment]
+name = "transport-ladder"
+axis = "the stack a crossing goes through"
+rows = [
+  "py-http worst", "py-http medium",
+  "py-ws worst", "py-ws medium",
+  "go-grpc worst", "go-grpc medium",
+  "go-udp worst", "go-udp medium",
+  "go-http worst", "go-http medium",
+]
+
+[sweep]
+# Application payload bytes per request. The request on the wire is 8 bytes of
+# id plus this, so the top of the range leaves 32760 bytes inside the 65507-byte
+# maximum UDP datagram (RFC 791 total length minus the IPv4 and UDP headers).
+# The range is not extended past that: a payload UDP cannot carry in one
+# datagram would make rung 3 measure fragmentation rather than a crossing, and a
+# row that fails is not a slower row.
+parameter = "payload_bytes"
+values = [128, 512, 2048, 8192, 32768]
+
+[run]
+ops = 5000
+warmup = 500
+reps = 3
+# Client and server get a core each, so a crossing is not measuring the two
+# processes fighting over one. cpuset.cpus.effective on this host is 0-1, so the
+# 2,3 in the repo CLAUDE.md does not exist here.
+server_core = 0
+client_core = 1
+# Above this 15-minute load average the run is filed as status: structure
+# instead of a baseline, and the result file says which.
+quiet_load15 = 0.5
+
+[quick]
+# make test: proves every row still agrees on the checksum, in under five
+# seconds. Not a measurement — the numbers from a quick run are noise.
+values = [128]
+ops = 200
+warmup = 20
+reps = 1

@@ -1,0 +1,31 @@
+// The gRPC rung carries the same two application messages as every other
+// rung: an id plus the payload out, the id plus the CRC-32 back. Protobuf
+// framing is left on top of that on purpose, because paying for it is part of
+// what gRPC costs.
+//
+// Regenerate with the recipe in ../../../notes/design.md. The generated files
+// are committed so that building this measurement needs no protoc.
+syntax = "proto3";
+
+package ladder.v1;
+
+option go_package = "benchtransport/ladderpb";
+
+message Work {
+  uint64 id = 1;
+  bytes payload = 2;
+}
+
+message Ack {
+  uint64 id = 1;
+  uint32 crc = 2;
+}
+
+service Ladder {
+  // Unary is the quick wiring: one RPC per crossing.
+  rpc Unary(Work) returns (Ack);
+
+  // Stream is gRPC's own documented remedy for a long-lived flow of small
+  // messages, and it is the medium-effort row.
+  rpc Stream(stream Work) returns (stream Ack);
+}
