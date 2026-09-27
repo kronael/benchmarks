@@ -9,6 +9,12 @@ ifndef MEASUREMENT
 $(error set MEASUREMENT before including measurement.mk)
 endif
 
+# Pinned so every measurement builds with one toolchain. simd is still an
+# experiment in go1.27, so a variant that imports it needs GOEXPERIMENT set at
+# build time, not at run time.
+export GOTOOLCHAIN := go1.27.1
+export GOEXPERIMENT := simd
+
 ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST)))/..)
 RESULTS := results
 STAMP := $(shell date -u +%Y%m%d)
