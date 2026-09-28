@@ -61,6 +61,20 @@ The checksum gate now refuses these cases rather than passing them: a workload
 that reaches the gate with one row raises. Before that, every case A and case B
 workload reported green while comparing nothing.
 
+### Half of measurement 02's sweep exceeds the latency field (2026-09-28)
+
+`casec/main.go` stores a request's latency in `uint32` nanoseconds and clamps at
+4,294,967,295 ns. At 16 and 20 bursts/s the scalar rows clamp 228,886 and
+268,836 of 600,000 requests, so their p99 and p99.9 are the ceiling and their
+recorded spread of 0.0 is saturation rather than precision.
+
+The row reports its own `clamped=` count, so no result is silently wrong and the
+finding excludes those points. But three of the six swept values cannot be
+measured with the field as it stands, which makes half the sweep dead weight.
+
+Fix is either a `uint64` latency field or a sweep that stops at the knee. Both
+change what the measurement claims to cover, so this waits for sign-off.
+
 ## Toolchain
 
 ### staticcheck cannot read go1.27 export data (2026-09-27)
