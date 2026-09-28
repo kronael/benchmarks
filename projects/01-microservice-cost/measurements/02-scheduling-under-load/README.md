@@ -64,14 +64,14 @@ Then wait for the box to be quiet — check the 15-minute load average first —
 take the cores:
 
 ```sh
-sudo chrt -f 80 taskset -c 0,1 ./run.py --cases C --no-build \
-  > results/$(date -u +%Y%m%d)-receiver-width-under-contention.md
+sudo chrt -f 80 taskset -c 0,1 make bench
 ```
 
-`--no-build` because the pinned run is started under `sudo` and must not compile
-anything as root; `make build` has already filled `bin/`. `make bench` does the
-same thing unpinned and prepends the machine fingerprint, which a recorded result
-needs.
+`make bench` runs `--cases C --no-build` and writes the result file itself
+through the repo's `bench.py`, with the machine fingerprint and the starting
+load in it. It compiles nothing because the pinned run is started under `sudo`,
+where the pinned toolchain cannot resolve from root's HOME and `go` silently
+falls back to the system go1.19.8; `make build` has already filled `bin/`.
 
 `CLAUDE.md` prescribes `taskset -c 2,3`. That fails on this box:
 `/sys/devices/system/cpu/possible` is `0-1`, so CPUs 2 and 3 do not exist and
@@ -84,8 +84,12 @@ Cases A and B need the Rust binaries restored before `--cases A,B` can run:
 
 ## Results
 
-Dated files under `results/`. Numbers quoted here cite the file they came
-from. Not yet run in this repository.
+Dated files under `results/`. Numbers quoted here cite the file they came from.
+
+`20260928-receiver-width-under-contention.md` — `structure`, one run, case C
+only. Each of the six workloads gated across fifteen runs on one checksum.
+`FINDING.md` has the capacity knee and says why the top half of the sweep is
+not quotable.
 
 ## Provenance
 

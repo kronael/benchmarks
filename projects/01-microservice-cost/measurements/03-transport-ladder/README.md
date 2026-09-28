@@ -41,15 +41,23 @@ alignment, the checksum gate and the loser's-fix rule.
 ## Running
 
 ```sh
-make prepare   # go mod download, and a venv with websockets for rung 1
+make -C ../../../.. build   # dist/fingerprint, which every result carries
+make prepare                # go mod download, and a venv with websockets
 make build
-make bench
+sudo chrt -f 80 taskset -c 0,1 make bench
 ```
 
-`make bench` writes the machine fingerprint into the result file through the
-repo's `bench.py`, which needs `dist/fingerprint` built at the repo root first.
+`make bench` compiles nothing, on purpose: under `sudo` the pinned toolchain
+cannot resolve from root's HOME and `go` silently falls back to the system
+go1.19.8. It writes the machine fingerprint and the starting load into the
+result file through the repo's `bench.py`, which is the only place a result
+file comes from.
 
 ## Results
 
 Dated files under `results/`. The question and the prediction are in
-`QUESTION.md`, the reasoning in `notes/design.md`. Not run yet.
+`QUESTION.md`, the reasoning in `notes/design.md`.
+
+`20260928-transport-ladder-rtt-us.md` — `structure`, one run. All ten rows fold
+one checksum per payload size across two languages and four transports.
+`FINDING.md` has the two crossovers and the language-against-wire split.
