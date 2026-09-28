@@ -86,10 +86,14 @@ Cases A and B need the Rust binaries restored before `--cases A,B` can run:
 
 Dated files under `results/`. Numbers quoted here cite the file they came from.
 
-`20260928-1230-receiver-width-under-contention.md` — `structure`, one run, case C
-only. Each of the six workloads gated across fifteen runs on one checksum.
-`FINDING.md` has the capacity knee and says why the top half of the sweep is
-not quotable.
+Two runs of case C, both `structure`, taken with the pinned cores 24.5% and
+81.7% busy. Each of the six workloads gated across fifteen runs on one checksum,
+in both. The two low contention levels reproduce to within 0.1x and the
+cores-used column to within 0.04.
+
+`FINDING.md` has the capacity knee and says why the top half of the sweep is not
+quotable: the latency field saturates, and the clamp count itself moves with the
+load.
 
 ## Provenance
 

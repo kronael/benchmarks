@@ -1,25 +1,29 @@
 # Finding — the receiver's own width decides whether it stays inside capacity
 
-`status: structure` (`results/20260928-1230-receiver-width-under-contention.md`,
-15-minute load 3.07, pinned cores 24.5% busy at the start). **One run**, five
-measured repetitions per row, so run-to-run stability is not established. The
-gaps below are 2x to 514x and the within-run throughput spread is 0-2%, which is
-why they are reported at all; a second run is still owed.
+Two runs, `results/20260928-1230-receiver-width-under-contention.md` and
+`results/20260928-1307-receiver-width-under-contention.md`, both
+`status: structure`. They were taken with the pinned cores **24.5%** and
+**81.7%** busy at the start, so agreement between them tests whether the effect
+belongs to the code or to the load. Five measured repetitions per row in each,
+one discarded warm-up.
 
-Each of the six workloads gated across all fifteen runs on one checksum, so the
-three widths provably did identical work.
+Each of the six workloads gated across all fifteen runs on one checksum, in both
+runs, so the three widths provably did identical work.
 
 ## Only the bottom half of the sweep is quotable, and the instrument says so
 
 The latency field is `uint32` nanoseconds and saturates at 4,294,967,295 ns.
 Each row reports how many of its 600,000 requests hit that ceiling:
 
-| bursts/s | scalar v1 clamped | scalar v3 clamped | simd clamped |
-|---:|---:|---:|---:|
-| 2, 4, 8 | 0 | 0 | 0 |
-| 12 | 2 | 17,953 | 0 |
-| 16 | 228,886 | 104,488 | 0 |
-| 20 | 268,836 | 267,091 | 0 |
+| bursts/s | scalar v1 clamped, run 1 / run 2 | simd clamped |
+|---:|---:|---:|
+| 2, 4, 8 | 0 / 0 | 0 |
+| 12 | 2 / 1 | 0 |
+| 16 | 228,886 / 91,006 | 0 |
+| 20 | 268,836 / 276,497 | 0 |
+
+The clamp count itself moves with the load — 228,886 against 91,006 at 16
+bursts/s — which is a second reason those points cannot be compared.
 
 At 16 and 20 bursts/s more than a third of the scalar samples are the clamp
 rather than a latency, and the `spread: 0.0` on those rows is the ceiling, not
@@ -29,17 +33,23 @@ result.
 
 ## The knee is between 4 and 8 bursts/s, and only the scalar rows cross it
 
-Within the unsaturated range, `scalar v1` divided by `simd`:
+Within the unsaturated range, `scalar v1` divided by `simd`, run 1 / run 2:
 
-| bursts/s | p50 | p99 | p99.9 | cores used, scalar / simd | peak RSS |
-|---:|---:|---:|---:|---|---|
-| 2 | 2.0x | 40.5x | 2.5x | 1.67 / 0.35 | 31 / 29 MB |
-| 4 | 6.1x | 9.1x | 6.6x | 1.81 / 0.54 | 51 / 29 MB |
-| 8 | 514.0x | 26.0x | 17.8x | 1.89 / 0.80 | 161 / 33 MB |
+| bursts/s | p50 | cores used, scalar / simd |
+|---:|---:|---|
+| 2 | 2.0x / 2.0x | 1.67 / 0.35 and 1.66 / 0.33 |
+| 4 | 6.1x / 6.0x | 1.81 / 0.54 and 1.81 / 0.53 |
+| 8 | 514x / 392x | 1.89 / 0.80 and 1.89 / 0.76 |
 
-Between 4 and 8 bursts/s the scalar row's p50 goes from 3.56 ms to 326 ms, a
-factor of 92. Over the same step the simd row's p50 goes from 588 µs to 635 µs,
-a factor of 1.08. **That is the crossover this measurement is for: not an
+The two low points reproduce to within 0.1x and the cores column to within 0.04
+across a 3.3x change in neighbour load. At 8 bursts/s the ratio is **about 400x
+to 500x** — past the knee the number is large and not precise, and it should be
+quoted as two orders of magnitude rather than as a figure.
+
+Between 4 and 8 bursts/s the scalar row's p50 goes from 3.56 ms to 326 ms in the
+first run and 3.47 ms to 241 ms in the second — a factor of 92 and of 70. Over
+the same step the simd row's p50 goes from 588 µs to 635 µs and from 578 µs to
+616 µs, a factor of 1.1 in both. **That is the crossover this measurement is for: not an
 ordering flip, but the offered load at which one configuration leaves its
 capacity while the other does not.** The scalar receiver crosses between 4 and 8
 bursts/s. The simd receiver has not crossed by 20 bursts/s, the top of the
@@ -84,8 +94,8 @@ prediction did not anticipate it.
 whole sweep" and its p99.9 advantage "falls monotonically and is under 1.3x by
 105% offered load", on the grounds that above the knee a light request waits
 behind a burst identical in all three rows. The opposite happens on both counts:
-the p50 advantage rises from 2.0x to 514x and the p99.9 advantage rises from
-2.5x to 17.8x. The reasoning fails because it assumed all three rows reach the
+the p50 advantage rises from 2.0x to about 400-500x and the p99.9 advantage
+rises from 2.5x to 17.8x. The reasoning fails because it assumed all three rows reach the
 knee together. They do not — the width of the light path is what decides which
 row reaches it, so above the knee the comparison is between a system inside its
 capacity and a system outside it, not between two queues behind one burst.
@@ -102,7 +112,8 @@ instead.
 
 The project prices a service boundary, and this measurement says what the far
 side's own code does to that price. Inside capacity the receiver's width is
-worth 2x to 6x on p50. Across the knee it is worth two orders of magnitude,
+worth 2x to 6x on p50, and both runs agree to within 0.1x. Across the knee it is
+worth two orders of magnitude,
 because it decides whether the far side is queueing at all.
 
 A crossing budget therefore cannot be written against a service time. The same
