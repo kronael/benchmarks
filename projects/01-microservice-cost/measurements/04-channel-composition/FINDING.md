@@ -3,7 +3,7 @@
 `status: verified` (`results/20260928-channel-composition.md`, 15-minute load
 1.26, pinned cores 31.5% busy at the start). A second run under contention
 (`20260927`, load 2.67) is kept beside it: the two agree on the winner at all
-eight sweep points and on every per-core ratio to within 0.08, so the ordering
+eight sweep points and on every per-core ratio to within 0.10, so the ordering
 below is stable and quotable. 28 runs per sweep point fold one checksum, and the
 checksums match across the two runs.
 
@@ -22,11 +22,11 @@ used. The graph is 26 nodes, depth 6, width 4, fanout 2.
 | 16384 | 402096 / 402096 | 256867 / 488047 | 237098 / 474197 | **211303** / **422606** |
 
 **In wall-clock time `channel-batched` wins at every point in the sweep, by
-1.86x to 1.95x, and nothing ever overtakes it.** There is no flip on this axis.
+1.81x to 1.98x, and nothing ever overtakes it.** There is no flip on this axis.
 
-**Per core it never wins at all.** Against `direct` it measures 1.01x to 1.11x
-across the whole sweep in both runs — the same work for the same CPU, inside the
-noise at every point. The entire wall-clock win is the second core, and the
+**Per core it never wins at all.** Against `direct` it measures 0.95x to 1.11x
+across the whole sweep over both runs, and the two runs never differ by more than
+0.10 at a point — the same work for the same CPU, inside the noise everywhere. The entire wall-clock win is the second core, and the
 ceiling of 1.9x is what two cores allow. `direct` uses 1.0 cores and every other
 row uses 1.8 to 2.0.
 
@@ -103,7 +103,7 @@ channel rows and 20.2x in `direct`. The prediction had the right idea that the
 channel rows queue and got the consequence backwards.
 
 **Right.** The ceiling was predicted at "about 1.8x, because two cores", and it
-is 1.86-1.95x. `direct` at work 1 was predicted at 150-250 ns/tick and measured
+is 1.81-1.98x. `direct` at work 1 was predicted at 150-250 ns/tick and measured
 231. The stated conclusion — "the channel composition is not worth having *for
 its speed*" — holds per core, though not for the reason given: it is not that
 the direct structure's own remedy wins by more, because it does not.

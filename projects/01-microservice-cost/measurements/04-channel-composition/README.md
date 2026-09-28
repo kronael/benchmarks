@@ -3,6 +3,12 @@
 Not what a crossing costs, but whether composing the work as channels and a
 module-level graph calculation is a structure worth having once you know.
 
+**Answer so far (Go rung only):** in wall-clock time the batched channel graph
+wins the whole sweep by 1.81x to 1.98x. Multiplied by the cores each row used it
+is level with the single-threaded walk, 0.95x to 1.11x. The structure buys the
+second core, not cheaper work, and it costs 236x to 466x in residence latency.
+`FINDING.md` has the crossovers and the evidence.
+
 **Axis:** the structure. The same computation written as an ordinary call graph
 in the same language is the control, so the runtime is held fixed and only the
 shape changes.
@@ -31,14 +37,20 @@ in place of it.
 
 ```sh
 make -C ../../../.. build
+make build
 sudo chrt -f 80 taskset -c 0,1 make bench
 ```
 
+`make bench` does not build, on purpose. Under `sudo` the pinned toolchain
+cannot resolve from root's HOME and `go` silently falls back to the system
+go1.19.8, so a measured run compiles nothing and raises on a missing binary.
+
 This container's cpuset is 0-1 host-wide, so CLAUDE.md's `-c 2,3` is refused
 here. `run.py` pins every child to the cores in `sweep.toml` itself, so plain
-`make bench` is also pinned; the `chrt` wrapper only adds priority. A run above
-`quiet_load_15` is filed as `structure` rather than as a baseline, and the file
-says which.
+`make bench` is also pinned; the `chrt` wrapper only adds priority. A run started above
+`bench.QUIET_LOAD_15` is filed as `structure` rather than as a baseline, and the
+file says which. Every result also carries the busy fraction of the pinned cores
+at the start, which is the number that actually describes this slice.
 
 `make test` runs every composition once at a small shape and checks that all
 four fold to the same checksum. It takes about three seconds and measures
@@ -47,7 +59,13 @@ nothing.
 ## Results
 
 Dated files under `results/`. Numbers quoted here cite the file they came from;
-nothing is inlined without one. Not run yet.
+nothing is inlined without one.
+
+- `20260928-channel-composition.md` — `verified`, 15-minute load 1.26, pinned
+  cores 31.5% busy. The baseline.
+- `20260927-channel-composition.md` — `structure`, load 2.67. Kept beside it:
+  the two agree on the winner at all eight sweep points and their checksums
+  match, which is what makes the ordering quotable.
 
 ## Notes
 

@@ -25,17 +25,30 @@ In `QUESTION.md`, written before the first run.
 Wait for the box to be quiet, then take the core:
 
 ```sh
+make -C ../../../.. build
+make build
 sudo chrt -f 80 taskset -c 1 make bench
 ```
 
-`make bench` builds the four binaries, disassembles each one to check the row
-actually contains the instructions it claims, runs the sweep pinned, refuses to
-report if the two kernels folded different checksums, and writes one dated file
-under `results/`. It needs `dist/fingerprint` from the repo root, which `make
-build` there produces. A run started above the load limit in `sweep.toml` is
-recorded as `status: structure`, never as a baseline.
+`make build` builds the four binaries and disassembles each one to check the row
+actually contains the instructions it claims, writing that trace to
+`bin/regime.txt`. `make bench` reads the trace, runs the sweep pinned, refuses to
+report if the kernels folded different checksums, and writes one dated file under
+`results/` with the trace in its `sources`.
+
+`make bench` compiles nothing, on purpose. Under `sudo` the pinned toolchain
+cannot resolve from root's HOME and `go` silently falls back to the system
+go1.19.8, so the measured pass invokes no toolchain at all and raises on a
+missing binary. A run started above `bench.QUIET_LOAD_15` is recorded as
+`status: structure`, never as a baseline.
 
 ## Results
 
 Dated files under `results/`. Numbers quoted here cite the file they came from;
-nothing is inlined without one. Not run yet.
+nothing is inlined without one.
+
+Two runs, both `status: structure` — each started above the load limit, so the
+absolute ns/element figures are not a baseline. They agree that the vector
+kernel loses below 8 elements and wins by 2.0x to 2.5x above it, and they
+disagree about the top of the sweep. `FINDING.md` says which claims survive
+that disagreement.
