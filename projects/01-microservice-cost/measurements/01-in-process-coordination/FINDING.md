@@ -1,7 +1,7 @@
 # Finding — vectorising the work unit pays only inside a band
 
-Two runs, `results/20260927-scalar-vs-simd-divto-1339.md` and
-`results/20260928-scalar-vs-simd-divto-1201.md`. **Both are `status: structure`**
+Two runs, `results/20260927-1339-scalar-vs-simd-divto.md` and
+`results/20260928-1201-scalar-vs-simd-divto.md`. **Both are `status: structure`**
 — each started above the 1.6 load limit — so the absolute ns/element figures are
 not a baseline. The pinned cores were 34.3% busy at the start of the second, and
 the two runs agree on the ordering everywhere it matters, which is what this

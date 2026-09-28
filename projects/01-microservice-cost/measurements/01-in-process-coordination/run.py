@@ -16,7 +16,6 @@ import os
 import subprocess
 import sys
 import tomllib
-from datetime import datetime, timezone
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -171,7 +170,7 @@ def main() -> None:
         for label in summary:
             rows[f"n={n} {label}"] = summary[label][n]
 
-    title = f"{cfg['experiment']['name']}-{datetime.now(timezone.utc):%H%M}"
+    title = cfg["experiment"]["name"]
     evidence = SOURCES + [f"regime at build time, {label}: {line}"
                           for label, line in traced.items()]
     out = bench.record(HERE / "results", title, rows, cfg["run"]["cores"], evidence, machine)

@@ -1,6 +1,6 @@
 # Finding — the channel structure buys cores, never cheaper work
 
-`status: verified` (`results/20260928-channel-composition.md`, 15-minute load
+`status: verified` (`results/20260928-1201-channel-composition.md`, 15-minute load
 1.26, pinned cores 31.5% busy at the start). A second run under contention
 (`20260927`, load 2.67) is kept beside it: the two agree on the winner at all
 eight sweep points and on every per-core ratio to within 0.10, so the ordering
@@ -11,6 +11,12 @@ checksums match across the two runs.
 
 Median ns per tick, then the same figure multiplied by the cores the row actually
 used. The graph is 26 nodes, depth 6, width 4, fanout 2.
+
+The second figure is **derived**, not recorded: `ns_per_tick` times `cpu_cores`
+is CPU-nanoseconds per tick, and `cpu_cores` comes from `getrusage` over the
+whole measured pass, so it includes the composition's setup and teardown as well
+as its steady state. It is an approximation, and it is derived because no single
+recorded column separates "faster" from "spending a second core".
 
 | work | direct | direct-parallel | channel | channel-batched |
 |---:|---:|---:|---:|---:|

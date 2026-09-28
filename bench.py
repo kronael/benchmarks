@@ -127,6 +127,10 @@ def record(results: Path, title: str, rows: dict[str, dict], cores: list[int],
            sources: list[str], before: dict[str, float]) -> Path:
     """Write one dated result file and return its path.
 
+    The file is named for the minute the record was written, so a second run on
+    the same day stands beside the first instead of replacing it: a superseded
+    number has to remain auditable next to the one that replaced it.
+
     `before` comes from before(), taken ahead of the run: a quiet start that ends
     loud is still a baseline, and a loaded start is structure however quiet the
     finish. QUIET_LOAD_15 is the one limit for the whole repository, so no
@@ -138,7 +142,7 @@ def record(results: Path, title: str, rows: dict[str, dict], cores: list[int],
     stamp = datetime.now(timezone.utc)
     status = "verified" if before["load15"] <= QUIET_LOAD_15 else "structure"
     results.mkdir(parents=True, exist_ok=True)
-    out = results / f"{stamp:%Y%m%d}-{title}.md"
+    out = results / f"{stamp:%Y%m%d-%H%M}-{title}.md"
     head = {
         "title": title, "date": f"{stamp:%Y-%m-%d}", "status": status,
         "host": machine.get("cpu_model", "unknown"), "cpus": machine.get("cpus"),

@@ -86,7 +86,7 @@ Cases A and B need the Rust binaries restored before `--cases A,B` can run:
 
 Dated files under `results/`. Numbers quoted here cite the file they came from.
 
-`20260928-receiver-width-under-contention.md` — `structure`, one run, case C
+`20260928-1230-receiver-width-under-contention.md` — `structure`, one run, case C
 only. Each of the six workloads gated across fifteen runs on one checksum.
 `FINDING.md` has the capacity knee and says why the top half of the sweep is
 not quotable.

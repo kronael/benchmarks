@@ -3,6 +3,13 @@
 **What a crossing costs across three realistic stacks**, each at worst case and
 at medium effort.
 
+**Answer:** the whole ladder spans 7x to 9x, not the two orders of magnitude the
+choice is usually argued with. About 2.2x of it comes back from keep-alives in
+Go's standard-library HTTP — a bigger lever than any single rung. The rest
+splits about 2.3x language against 1.9x wire, so the runtime matters more than
+the socket. These are ping-pong round trips, so the figures are a floor;
+`../../notes/attack.md` says what a real boundary adds.
+
 | rung | stack | why it is here |
 |---|---|---|
 | 1 | Python to Python, HTTP then WebSocket | the default reach |
@@ -58,6 +65,11 @@ file comes from.
 Dated files under `results/`. The question and the prediction are in
 `QUESTION.md`, the reasoning in `notes/design.md`.
 
-`20260928-transport-ladder-rtt-us.md` — `structure`, one run. All ten rows fold
-one checksum per payload size across two languages and four transports.
-`FINDING.md` has the two crossovers and the language-against-wire split.
+Two runs, both `structure`, taken under sharply different contention — the
+pinned cores were 26.4% busy at the start of `20260928-1233-...` and 85.9% at
+the start of `20260928-1242-...`. All ten rows fold one checksum per payload
+size across two languages and four transports, in both.
+
+Eight of the ten orderings are identical across the two runs. The two that move
+are the crossover points themselves, where the rows sit within 1% and 6% of each
+other. `FINDING.md` says which claims that leaves standing.

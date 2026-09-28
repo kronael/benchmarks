@@ -1,6 +1,6 @@
 # Finding — the receiver's own width decides whether it stays inside capacity
 
-`status: structure` (`results/20260928-receiver-width-under-contention.md`,
+`status: structure` (`results/20260928-1230-receiver-width-under-contention.md`,
 15-minute load 3.07, pinned cores 24.5% busy at the start). **One run**, five
 measured repetitions per row, so run-to-run stability is not established. The
 gaps below are 2x to 514x and the within-run throughput spread is 0-2%, which is

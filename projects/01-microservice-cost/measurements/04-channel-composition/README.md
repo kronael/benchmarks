@@ -61,9 +61,9 @@ nothing.
 Dated files under `results/`. Numbers quoted here cite the file they came from;
 nothing is inlined without one.
 
-- `20260928-channel-composition.md` — `verified`, 15-minute load 1.26, pinned
+- `20260928-1201-channel-composition.md` — `verified`, 15-minute load 1.26, pinned
   cores 31.5% busy. The baseline.
-- `20260927-channel-composition.md` — `structure`, load 2.67. Kept beside it:
+- `20260927-1341-channel-composition.md` — `structure`, load 2.67. Kept beside it:
   the two agree on the winner at all eight sweep points and their checksums
   match, which is what makes the ordering quotable.
 
