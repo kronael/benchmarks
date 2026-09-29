@@ -26,7 +26,8 @@ kernel wins. Four readings, two runs by two estimators.
 
 **Three of the four readings put the flip at 8 elements and the fourth puts it
 at 16.** Below it the vector kernel loses by up to 4x: at one element it costs
-about 10 ns against 2.6 ns. In the band above it the win is 2.0x to 2.5x.
+about 10 ns against 2.6 ns. Above it the win climbs: 1.4x to 1.6x at 16 elements, and 2.0x to 2.5x from 64
+elements upward.
 
 ## The upper flip is NOT established, and that is the honest answer
 
@@ -50,8 +51,11 @@ agree on this at every one of those three sizes.
 
 ## GOAMD64=v3 does not close the gap
 
-Go's documented remedy for an SSE2-only default is in the table and it buys the
-scalar row between 1% and 9% depending on the run. It never approaches the 2.1x
+Go's documented remedy for an SSE2-only default is in the table and it does not
+close the gap. At the two sizes discussed below it buys the scalar row 1% to 9%.
+Across the whole sweep it is erratic and sometimes negative — 3.8% to 9.2% WORSE
+at 4 elements, 18% better at 8 in the second run — which is itself the point: a
+remedy whose sign is not stable is not closing a 2.1x gap. It never approaches the 2.1x
 the vector kernel takes.
 
 The `v3` scalar row is the steadier of the two across runs — 1.003/1.004 at 1024

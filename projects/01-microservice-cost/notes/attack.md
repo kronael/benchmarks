@@ -34,13 +34,17 @@ that the checksum gate proves identical work across rows, and that the
 per-measurement files say which claims survive a second run and which do not —
 measurement 01's upper crossover is withheld for exactly this reason.
 
-**The part that survives the defence:** contention does not hit all rows
-equally. The slow rows hold more cores (`py-http` and the scalar receiver run at
-1.7-1.9 of 2.0; `go-udp` and the simd receiver run well under 1.0), so a
-neighbour steals proportionally more from them. **That biases the ladder's 8.67x
-spread upward.** On a quiet machine the spread is probably smaller, not larger,
-and the project's headline is therefore a ceiling on the ratio as well as a
-floor on the cost. This has to be stated, not buried.
+**What the defence actually shows.** I first wrote that contention inflates the
+spread, because the slow rows hold more cores and so lose more to a neighbour,
+and I quoted per-row core figures to prove it. Measurement 03 records no per-row
+core usage — those numbers came from measurement 02, which measures a receiver
+and not a transport. The claim was unsupported and is withdrawn.
+
+Replication answers it directly instead. The two ladder runs started at 26.4%
+and 85.9% busy on the pinned cores, and the 128 B spread read 8.67x and 8.97x.
+Tripling the neighbour load moved the headline by 3%, so contention is not
+quietly inflating this result. The absolute microseconds remain untrustworthy;
+the ratio holds up better than I assumed.
 
 ## 3. "The ladder confounds language with transport." — ANSWERED
 
@@ -108,5 +112,6 @@ does not reach its own intended bottom.
 - The project `FINDING.md` says the crossing figures are a **floor**, and names
   what a real boundary adds on top.
 - It reports the ladder spread as a range across payloads, not one cell.
-- It says contention biases the spread upward, so the ratio is a ceiling.
+- It withdraws the contention-bias claim, which was unsupported, and replaces it
+  with what replication measured: 3% movement across a 3.3x change in load.
 - The per-core figure is labelled derived.

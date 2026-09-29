@@ -20,12 +20,17 @@ cost once you have decided to have one — not an estimate of what a real one
 costs. The floor is still worth having, because an argument for a boundary that
 fails at its own floor fails everywhere.
 
-**And the ratios are a ceiling.** This box is a contended two-core slice of a
-shared Ryzen 9 5950X with an unreadable governor. Contention does not hit all
-rows equally: the slow rows hold more cores (`py-http` and the scalar receiver
-run at 1.7-1.9 of 2.0, `go-udp` and the simd receiver well under 1.0), so a
-neighbour steals proportionally more from them. On a quiet machine the ladder is
-probably flatter, not steeper.
+**The box is a contended two-core slice** of a shared Ryzen 9 5950X with an
+unreadable governor, so the question is how much that moves the spread. The
+answer is: less than expected. The two ladder runs started with the pinned cores
+26.4% and 85.9% busy, and the full-ladder spread at 128 B read 8.67x and 8.97x.
+A 3.3x change in neighbour load moved it 3%.
+
+An earlier version of this file claimed the slow rows hold more cores and so
+lose more to a neighbour, quoting per-row core figures. **Measurement 03 records
+no per-row core usage at all** — its columns are rung, row, effort, payload and
+the three percentiles. Those figures were measurement 02's, about a receiver
+rather than a transport, and they did not belong here.
 
 Every result is `status: structure` except measurement 04's baseline. The
 orderings are the result; the absolute figures are not.
@@ -42,10 +47,11 @@ the obvious way against tuned Go over UDP, across five payload sizes and two
 runs (6.91x to 8.97x). Not the two orders of magnitude the choice is usually
 argued with.
 
-**About 2.2x comes back without changing language or transport.** Keep-alives in
-Go's standard-library HTTP are worth 2.01x to 2.45x — the single largest lever
-in the table and more than any one step of the ladder. The recoverable fraction
-runs from 0.99x (`go-udp`, inside the noise) to 2.45x.
+**Between nothing and 8x comes back without changing language or transport**,
+depending on which default was wrong. Keep-alives in Go's standard-library HTTP
+are worth 2.01x to 2.45x; turning off WebSocket compression over incompressible
+bytes is worth 7.97x at 32 KiB. At the other end `go-udp`'s own remedy is worth
+0.99x to 1.08x, inside the noise.
 
 **It stops mattering as soon as the far side is busy.** Measurement 02 moves the
 receiver's p50 by two orders of magnitude across a capacity knee by changing the
@@ -56,10 +62,13 @@ request meets a receiver whose p50 is 588 µs or 326 ms depending on that loop.
 ## The four questions the prediction asked
 
 **"Which is larger: worst-to-medium inside one stack, or two adjacent stacks at
-the same effort?"** They are the same size. Tuning spans 0.99x to 2.45x;
-adjacent stacks span 1.15x to 1.76x. The largest single gap in the table is a
-tuning gap, not a stack gap. **This is the project's most useful number**: the
-honest first answer is "tune it", not "rewrite it".
+the same effort?"** Tuning wins, and by more than expected. Across both runs and
+all five payloads, applying a stack's own documented fix spans **0.99x to 7.97x**;
+stepping to the next stack along at the same effort never exceeds **1.99x**. The
+two largest levers in the whole table are both tuning fixes: turning deflate off
+in the Python WebSocket row (7.97x at 32 KiB) and turning on keep-alives in Go's
+standard-library HTTP (up to 2.45x). **This is the project's most useful
+result**: the first answer is "tune it", not "rewrite it".
 
 **"At what payload does serialisation overtake transport?"** At 8 KiB inside
 rung 1, and both runs place it to within 1% — untuned `py-ws` against untuned
@@ -69,9 +78,9 @@ a 4x payload step; how far it falls is not stable and the claim is withdrawn.
 Plain UDP never flips with anything, in either run.
 
 **"Does the channel structure cost or save, and does the sign hold across three
-languages?"** In Go it saves 1.81x to 1.98x in wall-clock time and saves nothing
+languages?"** In Go it saves 1.81x to 2.10x in wall-clock time and saves nothing
 per core — 0.95x to 1.11x against a single-threaded walk, over two runs. The
-structure buys the second core, never cheaper work, and charges 236x to 466x in
+structure buys the second core, never cheaper work, and charges 200x to 544x in
 residence latency. **The three-language question is unanswered**: only the Go
 rung exists.
 

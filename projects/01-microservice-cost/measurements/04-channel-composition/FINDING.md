@@ -3,9 +3,10 @@
 `status: verified` (`results/20260928-1201-channel-composition.md`, 15-minute load
 1.26, pinned cores 31.5% busy at the start). A second run under contention
 (`20260927`, load 2.67) is kept beside it: the two agree on the winner at all
-eight sweep points and on every per-core ratio to within 0.10, so the ordering
-below is stable and quotable. 28 runs per sweep point fold one checksum, and the
-checksums match across the two runs.
+eight sweep points and on every per-core ratio to within 0.11, so the ordering
+below is stable and quotable. 28 runs per sweep point fold one checksum, and the checksums match across the
+two runs — but that is read from the runner's console output, because
+`bench.record` does not yet write the checksum into the result file (`BUGS.md`).
 
 ## The ordering, and the one number that reverses it
 
@@ -28,11 +29,12 @@ recorded column separates "faster" from "spending a second core".
 | 16384 | 402096 / 402096 | 256867 / 488047 | 237098 / 474197 | **211303** / **422606** |
 
 **In wall-clock time `channel-batched` wins at every point in the sweep, by
-1.81x to 1.98x, and nothing ever overtakes it.** There is no flip on this axis.
+1.81x to 2.10x over the eight sweep points and both runs, and nothing ever
+overtakes it.** There is no flip on this axis.
 
 **Per core it never wins at all.** Against `direct` it measures 0.95x to 1.11x
 across the whole sweep over both runs, and the two runs never differ by more than
-0.10 at a point — the same work for the same CPU, inside the noise everywhere. The entire wall-clock win is the second core, and the
+0.11 at a point — the same work for the same CPU, inside the noise everywhere. The entire wall-clock win is the second core, and the
 ceiling of 1.9x is what two cores allow. `direct` uses 1.0 cores and every other
 row uses 1.8 to 2.0.
 
@@ -65,10 +67,13 @@ residence time, not in CPU. Batch 32 cuts channel traffic from 52 messages per
 tick to 1.6, and the tick that enters the graph waits for its batch and its
 buffer:
 
+Across all eight sweep points and both runs the cost is **200x to 544x**. Two
+rows for scale:
+
 | work | direct p50 | channel-batched p50 | cost |
 |---:|---:|---:|---:|
 | 1 | 260 ns | 121 µs | 466x |
-| 16384 | 385 µs | 90.8 ms | 236x |
+| 16384 | 385 µs | 90.8 ms | 200x to 236x |
 
 `direct-parallel` is the direct structure's own documented remedy and its cost is
 visible in one column: at work 1 it spawns **1,572,864 goroutines** and allocates
@@ -124,7 +129,7 @@ Group B asked whether structuring computation as channels is worth having once
 the cost of a crossing is known. On this shape and this box the answer is that
 the structure is not a performance technique. It is a way to use cores you
 already have, at about 5% overhead over a single-threaded walk once batched, and
-it costs 236x to 466x in residence latency to get there.
+it costs 200x to 544x in residence latency to get there.
 
 That matters for the project's main question because it removes an argument for
 the service boundary. If channels inside one process do not make the work

@@ -75,6 +75,20 @@ measured with the field as it stands, which makes half the sweep dead weight.
 Fix is either a `uint64` latency field or a sweep that stops at the knee. Both
 change what the measurement claims to cover, so this waits for sign-off.
 
+### bench.record writes no checksum into the result file (2026-09-29)
+
+The checksum gate runs and a mismatch stops the run, but the value it agreed on
+never reaches `results/`. Measurement 03's runner appends its own per-row
+checksum column afterwards; 01, 02 and 04 do not, so their result files carry no
+evidence of the thing the repository says it proves.
+
+Found by auditing measurement 04's claim that "the checksums match across the two
+runs". That claim is true and was read from the runner's console output, which is
+not in the repository and cannot be audited later.
+
+Fix is a `checksum` field written by `bench.record` into the frontmatter, so
+every result carries the value its rows agreed on.
+
 ## Toolchain
 
 ### staticcheck cannot read go1.27 export data (2026-09-27)

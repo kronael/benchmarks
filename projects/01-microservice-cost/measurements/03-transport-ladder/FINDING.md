@@ -73,7 +73,7 @@ At 8 KiB the two rows are within 1% of each other and the two runs order them
 oppositely. That is not instability in the finding — **it is the crossover
 itself**, located to a single sweep point by two independent runs. The mechanism
 is deflate over an incompressible `splitmix64` payload, which buys no bytes and
-costs CPU on both sides. Turning it off is worth 7.97x at 32 KiB, the one place
+costs CPU on both sides. Turning it off is worth 7.97x and 7.68x at 32 KiB in the two runs, the one place
 a remedy attacks the per-byte slope rather than the fixed cost.
 
 **Tuned gRPC collapses between 8 KiB and 32 KiB**, from 63.5/62.6 µs to
@@ -99,7 +99,8 @@ hold at all five payloads in both runs. The model earned those.
 **Wrong.** Prediction 1 put rung 1 worst against rung 3 medium at 15-25x at
 128 B; it is 8.67x and 8.97x, so the Python stack's fixed cost is smaller than
 the model allowed. Prediction 6 said the recoverable fraction is largest for
-`py-http`; it is largest for `go-http`, 2.01-2.45x against 1.68-1.81x.
+`py-http`; it is largest for `go-http`, 2.01-2.45x against `py-http`'s
+1.67-1.96x.
 
 **Half right.** Prediction 2 said nothing flips between rungs anywhere in the
 sweep. `go-grpc` medium does fall past `py-ws` medium at 32 KiB, which is a
