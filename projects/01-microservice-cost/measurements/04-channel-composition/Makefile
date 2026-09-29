@@ -5,7 +5,7 @@ build:
 	cd variants/go && go build -o ../../bin/ ./...
 
 lint:
-	$(LINT) variants/go
+	$(LINT) variants/go variants/python
 
 test:
 	cd variants/go && go test ./...
