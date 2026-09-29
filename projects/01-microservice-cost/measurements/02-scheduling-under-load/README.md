@@ -79,8 +79,12 @@ there is nothing to isolate from. Pinning still holds a thread on one core, whic
 is the part that moved rsx's numbers, but it reserves nothing — another reason
 every result here is `status: structure`.
 
-Cases A and B need the Rust binaries restored before `--cases A,B` can run:
-`variants/rust` holds only `src/lib.rs`.
+Cases A, B, P1 and P2 now have their Rust twins, and every case gates
+cross-language: A folds `e9d272bd58d6e9a5` across Go, Rust and Rust with
+`block_in_place`; B folds `e8b7b9a2853cabc5` across Go, Go at `GOGC=1000` and
+Rust; P1 and P2 fold `989680` and `bb212550014be0f0`. `make bench` still runs
+case C only, because case A's inherited operating points ask for more cores than
+this box has (`BUGS.md`).
 
 ## Results
 

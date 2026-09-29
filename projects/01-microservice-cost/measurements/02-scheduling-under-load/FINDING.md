@@ -120,6 +120,8 @@ A crossing budget therefore cannot be written against a service time. The same
 8.8 µs crossing lands on a receiver whose p50 is 588 µs or 326 ms depending on
 one loop's width, and the 8.8 µs is not the number that matters in either case.
 
-Unmeasured here: cases A, B, P1 and P2, the inherited cross-language rows. The
-rsx lift never brought the Rust binaries across, so the gate now refuses those
-cases rather than passing them on one row (`BUGS.md`).
+Unmeasured here: cases A, B, P1 and P2, the inherited cross-language rows. Their
+Rust twins now exist and every one of them gates cross-language on the real
+binaries, so the comparison is available — but case A's inherited operating
+points ask for 3.0 and 6.0 cores against this box's 2.0 and saturate the latency
+field, so running them needs retuned operating points first (`BUGS.md`).

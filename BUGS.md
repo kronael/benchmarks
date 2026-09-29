@@ -50,16 +50,17 @@ labels do not agree.
 
 ## Measurement 02 — scheduling under load
 
-### The rsx lift left the Rust variant without its binaries (2026-09-27)
+### Case A's operating points exceed this box (2026-09-29)
 
-`variants/rust` holds only `src/lib.rs`. The four binary sources never came
-across, so cases A, B, P1 and P2 cannot run and the measurement has no
-cross-language row. Case C, which is the axis this measurement predicts, is
-Go-only and unaffected.
+The four Rust twins now exist and every case gates cross-language, so cases A,
+B, P1 and P2 can run. Case A's inherited operating points ask for 3.0 and 6.0
+cores of burst work against this box's 2.0, so both saturate the `uint32`
+latency field and report the ceiling rather than a latency.
 
-The checksum gate now refuses these cases rather than passing them: a workload
-that reaches the gate with one row raises. Before that, every case A and case B
-workload reported green while comparing nothing.
+`make bench` therefore still runs `--cases C` only. Running A and B by default
+needs either retuned `BENCH_HEAVY_EVERY` values for a two-core box or a wider
+latency field, and either changes what the inherited comparison means, so it
+waits for sign-off.
 
 ### Half of measurement 02's sweep exceeds the latency field (2026-09-28)
 
