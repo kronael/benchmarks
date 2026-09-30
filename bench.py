@@ -32,7 +32,7 @@ TOOLCHAINS = ROOT / "dist" / "toolchains.json"
 QUIET_LOAD_15 = 1.6
 
 
-def run(command: list[str], cwd: Path | None = None, cores: list[int] | None = None,
+def run(command: list[str], cores: list[int] | None = None,
         env: dict[str, str] | None = None) -> str:
     """Run a command, pinned when cores are given, and return its stdout."""
     if cores:
@@ -40,8 +40,7 @@ def run(command: list[str], cwd: Path | None = None, cores: list[int] | None = N
         if taskset is None:
             raise RuntimeError("taskset not found; an unpinned run is not comparable")
         command = [taskset, "-c", ",".join(str(c) for c in cores), *command]
-    done = subprocess.run(command, cwd=cwd, env=env, capture_output=True, text=True,
-                          check=False)
+    done = subprocess.run(command, env=env, capture_output=True, text=True, check=False)
     if done.returncode != 0:
         raise RuntimeError(f"{' '.join(command)} exited {done.returncode}\n{done.stderr.strip()}")
     return done.stdout
@@ -63,11 +62,10 @@ def claim(cores: list[int], build: Callable[[], object] | None = None) -> None:
     machine = fingerprint()
     TOOLCHAINS.write_text(json.dumps({"toolchains": machine["toolchains"],
                                       "go_env": machine["go_env"]}))
-    print(f"# cores {','.join(str(c) for c in cores)} are "
-          f"{1 - contention(cores):.1%} idle", file=sys.stderr)
-    pinned = ["sudo", "-n", "chrt", "-f", "80", "taskset", "-c",
-              ",".join(str(c) for c in cores), sys.executable, *sys.argv]
-    print(f"# measured pass: chrt -f 80, cores {pinned[7]}", file=sys.stderr)
+    on = ",".join(str(c) for c in cores)
+    print(f"# measured pass: chrt -f 80, cores {on}", file=sys.stderr)
+    pinned = ["sudo", "-n", "chrt", "-f", "80", "taskset", "-c", on,
+              sys.executable, *sys.argv]
     raise SystemExit(subprocess.run(pinned, check=False).returncode)
 
 
@@ -146,11 +144,11 @@ def record(results: Path, title: str, rows: dict[str, dict], cores: list[int],
     out = results / f"{stamp:%Y%m%d-%H%M}-{title}.md"
     head = {
         "title": title, "date": f"{stamp:%Y-%m-%d}", "status": status,
-        "host": machine.get("cpu_model", "unknown"), "cpus": machine.get("cpus"),
-        "kernel": machine.get("kernel"), "governor": machine.get("governor") or "unreadable",
-        "turbo": machine.get("turbo"), "load_at_start": f"{before['load15']:.2f}",
+        "host": machine["cpu_model"], "cpus": machine["cpus"],
+        "kernel": machine["kernel"], "governor": machine["governor"] or "unreadable",
+        "turbo": machine["turbo"], "load_at_start": f"{before['load15']:.2f}",
         "load_limit": QUIET_LOAD_15,
-        "load_at_end": " ".join(machine.get("load_avg", "").split()[:3]),
+        "load_at_end": " ".join(machine["load_avg"].split()[:3]),
         "busy_on_pinned_cores_at_start": f"{before['busy_on_pinned_cores']:.1%}",
         "pinned_cores": cores,
     }
