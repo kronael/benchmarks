@@ -1,6 +1,6 @@
 # Why the harness does each of these things
 
-`bench.py` is 128 lines and says only what each function does. The reasoning is
+`bench.py` says only what each function does. The reasoning is
 here, because the repository's docs split puts the numbers in `results/`, what
 this is in `README.md`, and the reasoning in `notes/`. Moved out of the
 docstrings on 2026-09-30; the wording is unchanged.

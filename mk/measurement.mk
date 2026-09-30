@@ -17,47 +17,19 @@ export GOEXPERIMENT := simd
 
 ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST)))/..)
 LINT := $(ROOT)/lint.py
-RESULTS := results
 
-.PHONY: all prepare build lint test bench clean help
+# prepare, lint and clean are optional, so a measurement that needs none of
+# them gets a silent no-op here.
+.PHONY: all prepare lint clean
 
 all: build lint test
 
-help:
-	@echo "$(MEASUREMENT)"
-	@echo "  make prepare   fetch or build whatever the variants need"
-	@echo "  make build     build every variant"
-	@echo "  make lint      format check and static analysis"
-	@echo "  make test      fast correctness check, under five seconds"
-	@echo "  make bench     build, take the pinned cores, measure, record"
-	@echo "  make clean     remove build output, keep results"
+# build, test and bench are not optional. Without this rule a measurement that
+# forgets one gets "Nothing to be done" and exit 0, which is the quiet failure
+# this repository is built to avoid. Defining the three as recipes here instead
+# would make every measurement's own copy print an overriding-recipe warning.
+.DEFAULT:
+	$(error $(MEASUREMENT) defines no '$@' target)
 
-# Variants that need no preparation override nothing.
-prepare:
-	@:
-
-build:
-	@echo "no build step defined for $(MEASUREMENT)" >&2; exit 2
-
-lint:
-	@:
-
-test:
-	@echo "no test defined for $(MEASUREMENT)" >&2; exit 2
-
-# bench does NOT depend on build, and that is deliberate. run.py builds first
-# and then re-executes itself under `sudo chrt -f 80 taskset`, so `make bench`
-# on its own is the whole measured run. Everything compiles before that
-# escalation, because under root's HOME GOTOOLCHAIN cannot resolve the pinned
-# toolchain and `go` silently becomes the system one. A make recipe that built
-# here would compile as root whenever the old `sudo ... make bench` form is
-# used, which is why the dependency stays out.
-#
-# The record is written by bench.record inside the measurement's run.py, which is
-# the only place a result file comes from: it writes the machine fingerprint and
-# the starting load into the same file as the numbers.
-bench:
-	@echo "no bench step defined for $(MEASUREMENT)" >&2; exit 2
-
-clean:
-	@:
+# bench does NOT depend on build. run.py builds before it re-executes itself
+# under `sudo chrt -f 80 taskset`, so a make-side dependency would build twice.
