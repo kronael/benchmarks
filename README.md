@@ -1,25 +1,69 @@
 # benchmarks
 
-All benchmarks you always wanted to run.
+All benchmarks you always wanted to run. Each project asks one question you
+cannot look up, and answers it by running real code twice.
 
-Not a benchmark suite for one project. A place to ask a measurable question,
-run it across the variants that matter, and keep what you learned.
+## What a service boundary costs
 
-## The unit is a project
+The first project's question: every call that used to be a jump now serialises,
+copies, queues, traverses a socket and schedules on the far side — how much does
+that cost, and how much comes back without changing language?
 
-A project has one main question, and that question is its theme. The question
-is answered by a series of submeasurements, and each submeasurement is a
-benchmark with real code — twin implementations doing byte-identical work,
-proved by a checksum, never a sketch.
+**The first answer is "tune it", not "rewrite it".** Applying a stack's own
+documented fix spans 0.99x to 7.97x. Stepping to the next stack along at the
+same effort never exceeds 1.99x. The two largest levers in the whole table are
+both configuration: turning deflate off in a Python WebSocket over
+incompressible bytes is worth 7.97x at 32 KiB, and turning on keep-alives in
+Go's standard-library HTTP is worth 2.01x to 2.45x.
 
-A submeasurement follows one axis. Everything else is pinned. A benchmark that
-varies the language and the architecture at once has measured neither.
+**The whole ladder spans 7x to 9x**, Python over HTTP written the obvious way
+against tuned Go over UDP — not the two orders of magnitude the choice is
+usually argued with.
 
-## The house rule
+**It stops mattering as soon as the far side is busy.** A 36.5 µs crossing does
+not decide a latency budget when the same request meets a receiver whose p50 is
+588 µs or 326 ms depending on the width of one loop.
 
-**Sweep until the ordering flips.** One number is a scoreboard and it rots. The
-crossover is the finding: at what buffer size, what arity, what core count does
-the winner change. An experiment with results and no `FINDING.md` is unfinished.
+[Read the finding](projects/01-microservice-cost/FINDING.md), including the four
+attacks on it that survived.
+
+## Read this before quoting a number
+
+**Nothing here is a baseline.** The box is a contended two-core slice of a
+shared Ryzen 9 5950X with an unreadable governor, and every result is
+`status: structure` except one. The orderings are the result; the absolute
+figures are not.
+
+**These are ping-pong round trips, not service calls** — one request in flight,
+no marshalling of a real object, no TLS, no service discovery, no retries, no
+concurrent clients. Every crossing figure is a floor, not an estimate. The floor
+still earns its place, because an argument for a boundary that fails at its own
+floor fails everywhere.
+
+## Why the numbers are worth reading anyway
+
+A benchmark fails quietly. An unpinned thread, a stale binary or two variants
+doing slightly different work all produce a number that looks fine forever. So:
+
+- **Twin implementations fold their work into a checksum**, and the run refuses
+  to report when they disagree. Identical work is proved, never assumed.
+- **A missing `taskset` raises** rather than running unpinned. Thread migration
+  once moved a transport's high tail by 21% and reversed a published conclusion.
+- **Everything compiles before the run takes the cores**, so the measured pass
+  invokes no toolchain, and the versions that did build are in the result file.
+- **A run started on a loud box is filed as `structure`**, never as a baseline,
+  and the file says which.
+- **Sweep until the ordering flips.** One number is a scoreboard and it rots.
+  The crossover is the finding: at what payload, arity or core count the winner
+  changes. If nothing flips, that is the finding and it says so.
+- **The loser's documented fix stays in the table.** A comparison that omits the
+  other side's official remedy is a strawman.
+
+## Projects
+
+| project | main question | state |
+|---|---|---|
+| [01-microservice-cost](projects/01-microservice-cost/FINDING.md) | What does a service boundary cost, and how much comes back without changing language? | partly answered |
 
 ## Layout
 
@@ -35,29 +79,26 @@ projects/NN-slug/
     FINDING.md        where it flipped, and what it gives the theme
 ```
 
-## Projects
-
-| project | main question | state |
-|---|---|---|
-| [01-microservice-cost](projects/01-microservice-cost/QUESTION.md) | What does a service boundary cost, and how much comes back without changing language? | open |
-
 ## Running
 
 ```sh
-make fingerprint   record this machine into results/
-make               format, build, lint, fast test
-make bench         run a measurement: make -C projects/<p>/measurements/<m> bench
-make clean         remove generated artifacts
+make                  build, vet and test the harness
+make fingerprint      print this machine as JSON
+make clean            remove dist/fingerprint
 ```
 
-## Why the fingerprint comes first
+One measurement is one command, run from its own directory so its `sweep.toml`,
+variants and results stay together:
 
-A number without its machine is dead weight in six months. Frequency scaling
-and thermal drift move results more than most code changes, so every result
-file carries the CPU, the governor, the turbo state, the kernel, the toolchain
-versions and the date. Compare within a fingerprint, never across one.
+```sh
+make -C projects/01-microservice-cost/measurements/04-channel-composition bench
+```
 
-## Reporting
+That builds the variants, then re-executes itself under `sudo chrt -f 80
+taskset` on the cores named in `sweep.toml`, and writes one dated file under
+`results/` carrying the machine, the toolchains, the starting load and the
+checksums its rows agreed on.
 
-A result is a distribution, not a mean. An ordering that flips between runs is
-not quotable, and saying so is the finding.
+## Licence
+
+GPL-3.0-or-later. See [LICENSE](LICENSE).
