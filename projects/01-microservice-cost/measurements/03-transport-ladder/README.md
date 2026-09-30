@@ -48,15 +48,17 @@ alignment, the checksum gate and the loser's-fix rule.
 ## Running
 
 ```sh
-make -C ../../../.. build   # dist/fingerprint, which every result carries
 make prepare                # go mod download, and a venv with websockets
 make bench
 ```
 
-`make bench` compiles nothing, on purpose: under `sudo` the pinned toolchain
-cannot resolve from root's HOME and `go` silently falls back to the system
-go1.19.8. It writes the machine fingerprint and the starting load into the
-result file through the repo's `bench.py`, which is the only place a result
+`make bench` is the whole run. It builds `dist/fingerprint` and the variants,
+then re-executes itself under `sudo chrt -f 80 taskset` on the cores named in
+`sweep.toml`. Everything compiles before that escalation, on purpose: under
+`sudo` the pinned toolchain cannot resolve from root's HOME and `go` silently
+falls back to the system go1.19.8. It writes the machine fingerprint, the
+toolchain versions it built with, the starting load and the gated checksums into
+the result file through the repo's `bench.py`, which is the only place a result
 file comes from.
 
 ## Results

@@ -67,11 +67,13 @@ take the cores:
 make bench
 ```
 
-`make bench` runs `--cases C --no-build` and writes the result file itself
-through the repo's `bench.py`, with the machine fingerprint and the starting
-load in it. It compiles nothing because the pinned run is started under `sudo`,
-where the pinned toolchain cannot resolve from root's HOME and `go` silently
-falls back to the system go1.19.8; `make build` has already filled `bin/`.
+`make bench` runs `--cases C` and is the whole run. It builds `bin/`, then
+re-executes itself under `sudo chrt -f 80 taskset -c 0,1` and writes the result
+file through the repo's `bench.py`, with the machine fingerprint, the toolchain
+versions it built with, the starting load and the gated checksums in it.
+Everything compiles before that escalation, because under `sudo` the pinned
+toolchain cannot resolve from root's HOME and `go` silently falls back to the
+system go1.19.8.
 
 `CLAUDE.md` prescribes `taskset -c 2,3`. That fails on this box:
 `/sys/devices/system/cpu/possible` is `0-1`, so CPUs 2 and 3 do not exist and

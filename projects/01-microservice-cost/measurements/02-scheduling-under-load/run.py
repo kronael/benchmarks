@@ -240,23 +240,20 @@ def main():
         for i, r in enumerate(runs):
             checksums.setdefault(workload, {})[f"{label}#{i}"] = r["checksum"]
 
+    agreed = {}
     for workload, sums in sorted(checksums.items()):
-        bench.gate(sums)
-        print(f"# {workload}: {len(sums)} runs agree on {next(iter(sums.values()))}",
-              file=sys.stderr)
+        case, heavy_every = workload
+        value = bench.gate(sums)
+        agreed[f"{case} heavy_every={heavy_every}"] = value
+        print(f"# {workload}: {len(sums)} runs agree on {value}", file=sys.stderr)
 
     if args.quick:
         print(f"every row folded the same checksum in {len(checksums)} workloads")
         return
 
-    out = bench.record(HERE / "results", spec["experiment"]["name"], recorded, CORES,
-                       sources=["variants/go", "sweep.toml", "notes/design.md"],
-                       before=machine)
-    with out.open("a") as handle:
-        handle.write(detail_table(rows, reps))
-    print(f"wrote {out}, 15-minute load {machine['load15']:.2f} at the start against a "
-          f"limit of {bench.QUIET_LOAD_15}, pinned cores "
-          f"{machine['busy_on_pinned_cores']:.1%} busy")
+    bench.record(HERE / "results", spec["experiment"]["name"], recorded, CORES,
+                 sources=["variants/go", "sweep.toml", "notes/design.md"], before=machine,
+                 checksums=agreed, detail=detail_table(rows, reps))
 
 
 if __name__ == "__main__":

@@ -6,8 +6,7 @@ prepare:
 	cd variants/rust && cargo fetch
 
 # One command that calls Python. run.py owns the build because the case C rows
-# need a second Go build at GOAMD64=v3, and because a measured run started
-# under sudo must be able to skip compiling entirely (--no-build).
+# need a second Go build at GOAMD64=v3.
 build:
 	./run.py --cases A,B,C --build-only
 
@@ -17,10 +16,13 @@ lint:
 test:
 	./run.py --quick --cases C
 
-# Cases A and B need the Rust binaries restored first: variants/rust holds only
-# src/lib.rs, so `--cases A,B` cannot run here yet.
+# Case C only. The Rust twins for A and B exist, but BUGS.md records that case
+# A's operating points exceed this box, so `--cases A,B` is not a measurement
+# here yet. --no-build is gone on purpose: run.py builds before it takes the
+# cores, so editing a variant and running this no longer measures the old
+# binary in silence.
 bench:
-	./run.py --cases C --no-build
+	./run.py --cases C
 
 clean:
 	cd variants/rust && cargo clean

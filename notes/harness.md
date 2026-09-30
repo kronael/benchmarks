@@ -38,6 +38,22 @@ repository, so no measurement can set itself an easier one. The busy fraction of
 the pinned cores is recorded beside it but does not yet decide the status;
 `BUGS.md` carries that proposal.
 
+## The toolchains are read before the escalation — `claim()`, `record()`
+
+`record()` runs in the measured pass, which is root, and under root's HOME
+`GOTOOLCHAIN` cannot resolve the pinned toolchain, so `go` there is the system
+go1.19.8. A toolchain version read at that point would describe root rather than
+the compiler that built the binaries. `claim()` therefore writes the reading to
+`dist/toolchains.json` while it is still unprivileged, and `record()` copies that
+file into the result.
+
+## The agreed checksum goes into the file — `gate()`, `record()`
+
+`gate()` returns the value it accepted so the runner can collect one per swept
+point and hand the set to `record()`. The gate already refuses a mismatch; the
+reason to write the value down is that a console nobody kept is not evidence. A
+claim that two runs did identical work is then checkable from the two files.
+
 ## Low, median, high, never a mean alone — `summarise()`
 
 The spread is itself a finding, and a wide one usually names the scheduler rather

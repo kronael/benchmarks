@@ -75,7 +75,7 @@ def main():
     if not args.quick:
         bench.claim(cores, lambda: bench.run(["make", "-C", str(HERE), "build"]))
     machine = bench.before(cores)
-    rows, detail = {}, {}
+    rows, detail, agreed = {}, {}, {}
     for point in points:
         flags = [f"-depth={graph['depth']}", f"-width={graph['width']}",
                  f"-fanout={graph['fanout']}", f"-work={point['work']}",
@@ -93,22 +93,17 @@ def main():
                              for k, _ in DETAIL}
             for i, r in enumerate(measured):
                 checksums[f"{comp}#{i}"] = r["checksum"]
-        bench.gate(checksums)
-        print(f"# work={point['work']}: {len(checksums)} runs, checksum "
-              f"{next(iter(checksums.values()))}", file=sys.stderr)
+        at = f"work={point['work']}"
+        agreed[at] = bench.gate(checksums)
+        print(f"# {at}: {len(checksums)} runs, checksum {agreed[at]}", file=sys.stderr)
 
     if args.quick:
         print(f"every composition folded to the same checksum at work={points[0]['work']}")
         return
 
-    out = bench.record(HERE / "results", cfg["experiment"]["name"], rows, cores,
-                       sources=["variants/go", "sweep.toml", "QUESTION.md"],
-                       before=machine)
-    with out.open("a") as handle:
-        handle.write(detail_table(detail, reps))
-    print(f"wrote {out}, 15-minute load {machine['load15']:.2f} at the start against a "
-          f"limit of {bench.QUIET_LOAD_15}, pinned cores "
-          f"{machine['busy_on_pinned_cores']:.1%} busy")
+    bench.record(HERE / "results", cfg["experiment"]["name"], rows, cores,
+                 sources=["variants/go", "sweep.toml", "QUESTION.md"], before=machine,
+                 checksums=agreed, detail=detail_table(detail, reps))
 
 
 if __name__ == "__main__":

@@ -166,20 +166,22 @@ def main() -> None:
             summary[label][n] = bench.summarise([float(v) for v in fields["ns_per_elem"].split(",")])
             checksums[n][label] = fields["checksum"]
 
-    rows = {}
+    rows, agreed = {}, {}
     for n in sizes:
-        bench.gate(checksums[n])
+        agreed[f"n={n}"] = bench.gate(checksums[n])
         for label in summary:
             rows[f"n={n} {label}"] = summary[label][n]
+
+    crossover(sizes, summary, cfg)
+    if args.quick:
+        print(f"every variant folded the same checksum at {len(sizes)} sizes")
+        return
 
     title = cfg["experiment"]["name"]
     evidence = SOURCES + [f"regime at build time, {label}: {line}"
                           for label, line in traced.items()]
-    out = bench.record(HERE / "results", title, rows, cfg["run"]["cores"], evidence, machine)
-    crossover(sizes, summary, cfg)
-    print(f"\nwrote {out}, 15-minute load {machine['load15']:.2f} at the start against a "
-          f"limit of {bench.QUIET_LOAD_15}, pinned cores "
-          f"{machine['busy_on_pinned_cores']:.1%} busy")
+    bench.record(HERE / "results", title, rows, cfg["run"]["cores"], evidence, machine,
+                 checksums=agreed)
 
 
 if __name__ == "__main__":

@@ -27,6 +27,7 @@ from pathlib import Path
 from statistics import median
 
 ROOT = Path(__file__).parent
+TOOLCHAINS = ROOT / "dist" / "toolchains.json"
 
 QUIET_LOAD_15 = 1.6
 
@@ -59,6 +60,9 @@ def claim(cores: list[int], build: Callable[[], object] | None = None) -> None:
     run(["make", "-C", str(ROOT), "build"])
     if build is not None:
         build()
+    machine = fingerprint()
+    TOOLCHAINS.write_text(json.dumps({"toolchains": machine["toolchains"],
+                                      "go_env": machine["go_env"]}))
     print(f"# cores {','.join(str(c) for c in cores)} are "
           f"{1 - contention(cores):.1%} idle", file=sys.stderr)
     pinned = ["sudo", "-n", "chrt", "-f", "80", "taskset", "-c",
@@ -94,13 +98,15 @@ def before(cores: list[int]) -> dict[str, float]:
     return {"load15": os.getloadavg()[2], "busy_on_pinned_cores": contention(cores)}
 
 
-def gate(checksums: Mapping[str, object]) -> None:
-    """Raise unless two or more rows folded their work to the same checksum."""
+def gate(checksums: Mapping[str, str]) -> str:
+    """Return the one checksum two or more rows agreed on, or raise."""
     if len(checksums) < 2:
         raise RuntimeError(f"a gate over {len(checksums)} row proves nothing: {sorted(checksums)}")
-    if len(set(checksums.values())) > 1:
+    agreed = set(checksums.values())
+    if len(agreed) > 1:
         detail = ", ".join(f"{k}={v}" for k, v in sorted(checksums.items()))
         raise RuntimeError(f"variants did not do identical work: {detail}")
+    return agreed.pop()
 
 
 def summarise(values: list[float]) -> dict:
@@ -124,9 +130,16 @@ def fingerprint() -> dict:
 
 
 def record(results: Path, title: str, rows: dict[str, dict], cores: list[int],
-           sources: list[str], before: dict[str, float]) -> Path:
-    """Write one dated result file, named for the minute, and return its path."""
+           sources: list[str], before: dict[str, float], *,
+           checksums: Mapping[str, str], detail: str = "") -> Path:
+    """Write one dated result file, named for the minute, and return its path.
+
+    `checksums` carries the value each gated point agreed on. The gate already
+    refused a mismatch; writing the value down is what makes the claim auditable
+    from the file instead of from a console nobody kept.
+    """
     machine = fingerprint()
+    built = json.loads(TOOLCHAINS.read_text())
     stamp = datetime.now(timezone.utc)
     status = "verified" if before["load15"] <= QUIET_LOAD_15 else "structure"
     results.mkdir(parents=True, exist_ok=True)
@@ -141,14 +154,20 @@ def record(results: Path, title: str, rows: dict[str, dict], cores: list[int],
         "busy_on_pinned_cores_at_start": f"{before['busy_on_pinned_cores']:.1%}",
         "pinned_cores": cores,
     }
-    lines = ["---", *(f"{k}: {v}" for k, v in head.items()), "sources:",
-             *(f"  - {s}" for s in sources), "---", "", f"# {title}", "",
+    lines = ["---", *(f"{k}: {v}" for k, v in head.items()),
+             "toolchains:", *(f"  {k}: {v}" for k, v in built["toolchains"].items()),
+             "go_env:", *(f"  {k}: {v}" for k, v in built["go_env"].items()),
+             "checksums:", *(f"  {k}: {v}" for k, v in checksums.items()),
+             "sources:", *(f"  - {s}" for s in sources), "---", "", f"# {title}", "",
              "| variant | samples | low | median | high | spread |",
              "|---|---:|---:|---:|---:|---:|"]
     for name, s in rows.items():
         lines.append(f"| {name} | {s['samples']} | {s['low']:.3f} | {s['median']:.3f} "
                      f"| {s['high']:.3f} | {s['spread']:.3f} |")
-    out.write_text("\n".join(lines) + "\n")
+    out.write_text("\n".join(lines) + "\n" + detail)
+    print(f"wrote {out}, 15-minute load {before['load15']:.2f} at the start against a "
+          f"limit of {QUIET_LOAD_15}, pinned cores "
+          f"{before['busy_on_pinned_cores']:.1%} busy")
     return out
 
 

@@ -121,8 +121,8 @@ def load(config_path: Path, quick: bool) -> tuple[list[int], dict]:
     return values, run_cfg
 
 
-def report(cells: dict, values: list[int], run_cfg: dict, quick: bool,
-           wanted: list[str], machine: dict[str, float]) -> None:
+def report(cells: dict, values: list[int], run_cfg: dict, quick: bool, wanted: list[str],
+           machine: dict[str, float], agreed: dict[str, str]) -> None:
     """Print the ladder, then write the dated result file through bench.py."""
     matrix = [row for row in MATRIX if row[1] in wanted]
     header = "| rung | row | effort | " + " | ".join(f"{v}B p50/p99 µs" for v in values) + " |"
@@ -150,12 +150,6 @@ def report(cells: dict, values: list[int], run_cfg: dict, quick: bool,
                 "high": cell["max_ns"] / 1000,
                 "spread": (cell["max_ns"] - cell["min_ns"]) / 1000,
             }
-    out = bench.record(
-        HERE / "results", "transport-ladder-rtt-us", rows,
-        [run_cfg["server_core"], run_cfg["client_core"]],
-        sources=["variants/go", "variants/python", "sweep.toml", "notes/design.md"],
-        before=machine,
-    )
     tail = ["", "| rung | row | effort | payload | p50 µs | p99 µs | p99.9 µs | checksum |",
             "|---|---|---|---:|---:|---:|---:|---|"]
     for rung, name, effort, *_ in matrix:
@@ -168,9 +162,12 @@ def report(cells: dict, values: list[int], run_cfg: dict, quick: bool,
              f"warmup {run_cfg['warmup']}; every cell is the median across reps.",
              "One checksum per payload size across all ten rows: identical work is gated, "
              "not assumed."]
-    with out.open("a") as handle:
-        handle.write("\n".join(tail) + "\n")
-    print(f"\nwrote {out}")
+    bench.record(
+        HERE / "results", "transport-ladder-rtt-us", rows,
+        [run_cfg["server_core"], run_cfg["client_core"]],
+        sources=["variants/go", "variants/python", "sweep.toml", "notes/design.md"],
+        before=machine, checksums=agreed, detail="\n".join(tail) + "\n",
+    )
 
 
 def main() -> None:
@@ -186,16 +183,17 @@ def main() -> None:
     if not args.quick:
         bench.claim(cores, lambda: bench.run(["make", "-C", str(HERE), "build"]))
     machine = bench.before(cores)
-    cells = {}
+    cells, agreed = {}, {}
     for payload in values:
         for row in MATRIX:
             if row[1] not in wanted:
                 continue
             print(f"# {row[1]} {row[2]} @{payload}B", file=sys.stderr, flush=True)
             cells[(row[1], row[2], payload)] = measure(row, payload, run_cfg, not args.quick)
-        bench.gate({f"{row[1]} {row[2]} @{payload}B": cells[(row[1], row[2], payload)]["checksum"]
-                    for row in MATRIX if row[1] in wanted})
-    report(cells, values, run_cfg, args.quick, wanted, machine)
+        agreed[f"@{payload}B"] = bench.gate(
+            {f"{row[1]} {row[2]}": cells[(row[1], row[2], payload)]["checksum"]
+             for row in MATRIX if row[1] in wanted})
+    report(cells, values, run_cfg, args.quick, wanted, machine, agreed)
 
 
 if __name__ == "__main__":

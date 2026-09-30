@@ -9,6 +9,7 @@ lint:
 
 test:
 	cd variants/go && go test ./...
+	./run.py sweep.toml --quick
 
 bench:
 	./run.py
