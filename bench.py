@@ -6,8 +6,9 @@
 
 The benchmark programs do the measuring. This only runs them on the cores you
 chose, refuses to report when they did different work, and writes the result
-down with the machine beside it. If it grows past one screen, something that
-belongs in a variant has leaked into here.
+down with the machine beside it. Why each rule is here at all is in
+notes/harness.md. If this file grows past one screen, something that belongs in
+a variant has leaked into it.
 
     uv run bench.py fingerprint
 """
@@ -31,13 +32,7 @@ QUIET_LOAD_15 = 1.6
 
 def run(command: list[str], cwd: Path | None = None, cores: list[int] | None = None,
         env: dict[str, str] | None = None) -> str:
-    """Run a command, pinned when cores are given, and return its stdout.
-
-    Pinning is not tuning. Unpinned threads report their own migration as the
-    thing under test: in rsx that alone moved a transport's high tail by 21%
-    and reversed the published conclusion. An absent taskset raises rather
-    than running unpinned, because an unpinned run looks identical afterwards.
-    """
+    """Run a command, pinned when cores are given, and return its stdout."""
     if cores:
         taskset = shutil.which("taskset")
         if taskset is None:
@@ -48,11 +43,6 @@ def run(command: list[str], cwd: Path | None = None, cores: list[int] | None = N
     if done.returncode != 0:
         raise RuntimeError(f"{' '.join(command)} exited {done.returncode}\n{done.stderr.strip()}")
     return done.stdout
-
-
-def load15() -> float:
-    """The 15-minute load average. Read it before the run it judges, never after."""
-    return os.getloadavg()[2]
 
 
 def _jiffies(cores: list[int]) -> tuple[int, int]:
@@ -69,14 +59,7 @@ def _jiffies(cores: list[int]) -> tuple[int, int]:
 
 
 def contention(cores: list[int], window: float = 1.0) -> float:
-    """Busy fraction of the pinned cores, sampled before the run that it judges.
-
-    /proc/loadavg is the host's and counts CPUs this cpuset cannot use, so it is
-    not commensurable with a two-core slice. Measured here: a host load of 36
-    over pinned cores that were 17% idle, of which the benchmark itself held 14%
-    and a neighbour 69%. Per-CPU time is commensurable, and sampled before the
-    benchmark starts it measures the neighbours rather than the benchmark.
-    """
+    """Busy fraction of the pinned cores, sampled before the run that it judges."""
     was = _jiffies(cores)
     time.sleep(window)
     now = _jiffies(cores)
@@ -86,16 +69,11 @@ def contention(cores: list[int], window: float = 1.0) -> float:
 
 def before(cores: list[int]) -> dict[str, float]:
     """Every machine reading that must be taken BEFORE the run, never after."""
-    return {"load15": load15(), "busy_on_pinned_cores": contention(cores)}
+    return {"load15": os.getloadavg()[2], "busy_on_pinned_cores": contention(cores)}
 
 
 def gate(checksums: dict[str, object]) -> None:
-    """Raise unless two or more rows folded their work to the same checksum.
-
-    The count is gated as well as the value. One row satisfies any equality test
-    while comparing nothing, and a comparison of one row is the quiet failure
-    this harness exists to catch.
-    """
+    """Raise unless two or more rows folded their work to the same checksum."""
     if len(checksums) < 2:
         raise RuntimeError(f"a gate over {len(checksums)} row proves nothing: {sorted(checksums)}")
     if len(set(checksums.values())) > 1:
@@ -125,19 +103,7 @@ def fingerprint() -> dict:
 
 def record(results: Path, title: str, rows: dict[str, dict], cores: list[int],
            sources: list[str], before: dict[str, float]) -> Path:
-    """Write one dated result file and return its path.
-
-    The file is named for the minute the record was written, so a second run on
-    the same day stands beside the first instead of replacing it: a superseded
-    number has to remain auditable next to the one that replaced it.
-
-    `before` comes from before(), taken ahead of the run: a quiet start that ends
-    loud is still a baseline, and a loaded start is structure however quiet the
-    finish. QUIET_LOAD_15 is the one limit for the whole repository, so no
-    measurement can set itself an easier one. The busy fraction of the pinned
-    cores is recorded beside it but does not yet decide the status; BUGS.md
-    carries that proposal.
-    """
+    """Write one dated result file, named for the minute, and return its path."""
     machine = fingerprint()
     stamp = datetime.now(timezone.utc)
     status = "verified" if before["load15"] <= QUIET_LOAD_15 else "structure"
