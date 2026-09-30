@@ -21,6 +21,7 @@ import shutil
 import subprocess
 import sys
 import time
+from collections.abc import Callable, Mapping
 from datetime import datetime, timezone
 from pathlib import Path
 from statistics import median
@@ -43,6 +44,27 @@ def run(command: list[str], cwd: Path | None = None, cores: list[int] | None = N
     if done.returncode != 0:
         raise RuntimeError(f"{' '.join(command)} exited {done.returncode}\n{done.stderr.strip()}")
     return done.stdout
+
+
+def claim(cores: list[int], build: Callable[[], object] | None = None) -> None:
+    """Build, then take the cores by re-executing this script pinned and privileged.
+
+    Returns straight away in the measured pass, which is how `build` runs under
+    the caller's toolchain and never under root's. In the pass that starts the
+    measured one this does not return: it builds, escalates, and exits with the
+    child's status.
+    """
+    if os.geteuid() == 0:
+        return
+    run(["make", "-C", str(ROOT), "build"])
+    if build is not None:
+        build()
+    print(f"# cores {','.join(str(c) for c in cores)} are "
+          f"{1 - contention(cores):.1%} idle", file=sys.stderr)
+    pinned = ["sudo", "-n", "chrt", "-f", "80", "taskset", "-c",
+              ",".join(str(c) for c in cores), sys.executable, *sys.argv]
+    print(f"# measured pass: chrt -f 80, cores {pinned[7]}", file=sys.stderr)
+    raise SystemExit(subprocess.run(pinned, check=False).returncode)
 
 
 def _jiffies(cores: list[int]) -> tuple[int, int]:
@@ -72,7 +94,7 @@ def before(cores: list[int]) -> dict[str, float]:
     return {"load15": os.getloadavg()[2], "busy_on_pinned_cores": contention(cores)}
 
 
-def gate(checksums: dict[str, object]) -> None:
+def gate(checksums: Mapping[str, object]) -> None:
     """Raise unless two or more rows folded their work to the same checksum."""
     if len(checksums) < 2:
         raise RuntimeError(f"a gate over {len(checksums)} row proves nothing: {sorted(checksums)}")

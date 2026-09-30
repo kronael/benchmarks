@@ -182,7 +182,10 @@ def main() -> None:
     values, run_cfg = load(Path(args.config), args.quick)
     wanted = args.rows.split(",") if args.rows else [row[1] for row in MATRIX]
 
-    machine = bench.before([run_cfg["server_core"], run_cfg["client_core"]])
+    cores = [run_cfg["server_core"], run_cfg["client_core"]]
+    if not args.quick:
+        bench.claim(cores, lambda: bench.run(["make", "-C", str(HERE), "build"]))
+    machine = bench.before(cores)
     cells = {}
     for payload in values:
         for row in MATRIX:

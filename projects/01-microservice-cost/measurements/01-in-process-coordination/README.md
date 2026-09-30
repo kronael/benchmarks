@@ -25,9 +25,7 @@ In `QUESTION.md`, written before the first run.
 Wait for the box to be quiet, then take the core:
 
 ```sh
-make -C ../../../.. build
-make build
-sudo chrt -f 80 taskset -c 1 make bench
+make bench
 ```
 
 `make build` builds the four binaries and disassembles each one to check the row

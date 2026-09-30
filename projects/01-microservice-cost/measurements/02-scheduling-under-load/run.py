@@ -206,10 +206,14 @@ def main():
              "BENCH_HEAVY_ITERS": str(spec["run"]["quick_heavy_iters"])} if args.quick else {}
 
     BIN.mkdir(exist_ok=True)
-    if not args.no_build:
-        build(matrix)
     if args.build_only:
+        if not args.no_build:
+            build(matrix)
         return
+    if not args.quick:
+        bench.claim(CORES, None if args.no_build else lambda: build(matrix))
+    elif not args.no_build:
+        build(matrix)
 
     machine = bench.before(CORES)
     rows, recorded, checksums = [], {}, {}

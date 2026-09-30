@@ -50,8 +50,7 @@ alignment, the checksum gate and the loser's-fix rule.
 ```sh
 make -C ../../../.. build   # dist/fingerprint, which every result carries
 make prepare                # go mod download, and a venv with websockets
-make build
-sudo chrt -f 80 taskset -c 0,1 make bench
+make bench
 ```
 
 `make bench` compiles nothing, on purpose: under `sudo` the pinned toolchain

@@ -64,7 +64,7 @@ Then wait for the box to be quiet — check the 15-minute load average first —
 take the cores:
 
 ```sh
-sudo chrt -f 80 taskset -c 0,1 make bench
+make bench
 ```
 
 `make bench` runs `--cases C --no-build` and writes the result file itself

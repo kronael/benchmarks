@@ -36,9 +36,7 @@ in place of it.
 `dist/fingerprint` has to exist, because every result file carries the machine:
 
 ```sh
-make -C ../../../.. build
-make build
-sudo chrt -f 80 taskset -c 0,1 make bench
+make bench
 ```
 
 `make bench` does not build, on purpose. Under `sudo` the pinned toolchain

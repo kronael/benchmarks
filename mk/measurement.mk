@@ -29,7 +29,7 @@ help:
 	@echo "  make build     build every variant"
 	@echo "  make lint      format check and static analysis"
 	@echo "  make test      fast correctness check, under five seconds"
-	@echo "  make bench     run the already-built measurement and record it"
+	@echo "  make bench     build, take the pinned cores, measure, record"
 	@echo "  make clean     remove build output, keep results"
 
 # Variants that need no preparation override nothing.
@@ -45,11 +45,13 @@ lint:
 test:
 	@echo "no test defined for $(MEASUREMENT)" >&2; exit 2
 
-# bench does NOT depend on build, and that is deliberate twice over. A measured
-# run is started under `sudo chrt`, where GOTOOLCHAIN cannot resolve the pinned
-# toolchain from root's HOME, so compiling there builds a different binary or
-# fails outright. A run that compiles also measures the build cache. Run
-# `make build` first; bench raises on a missing binary rather than making one.
+# bench does NOT depend on build, and that is deliberate. run.py builds first
+# and then re-executes itself under `sudo chrt -f 80 taskset`, so `make bench`
+# on its own is the whole measured run. Everything compiles before that
+# escalation, because under root's HOME GOTOOLCHAIN cannot resolve the pinned
+# toolchain and `go` silently becomes the system one. A make recipe that built
+# here would compile as root whenever the old `sudo ... make bench` form is
+# used, which is why the dependency stays out.
 #
 # The record is written by bench.record inside the measurement's run.py, which is
 # the only place a result file comes from: it writes the machine fingerprint and

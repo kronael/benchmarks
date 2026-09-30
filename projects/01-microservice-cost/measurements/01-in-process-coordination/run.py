@@ -148,6 +148,8 @@ def main() -> None:
     if args.quick:
         sizes = sizes[:6]
         cfg["run"] = dict(cfg["run"], element_visits=100_000, samples=3, warmup_samples=1)
+    if not args.quick:
+        bench.claim(cfg["run"]["cores"], lambda: build(cfg))
     machine = bench.before(cfg["run"]["cores"])
 
     traced = trace(cfg)

@@ -72,6 +72,8 @@ def main():
         points, reps = [cfg["quick"]], cfg["quick"]["reps"]
     cores = run["cores"]
 
+    if not args.quick:
+        bench.claim(cores, lambda: bench.run(["make", "-C", str(HERE), "build"]))
     machine = bench.before(cores)
     rows, detail = {}, {}
     for point in points:
