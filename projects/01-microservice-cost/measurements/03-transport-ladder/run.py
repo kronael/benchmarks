@@ -193,9 +193,8 @@ def main() -> None:
                 continue
             print(f"# {row[1]} {row[2]} @{payload}B", file=sys.stderr, flush=True)
             cells[(row[1], row[2], payload)] = measure(row, payload, run_cfg, not args.quick)
-        agreed = {cells[(row[1], row[2], payload)]["checksum"] for row in MATRIX if row[1] in wanted}
-        if len(agreed) > 1:
-            raise RuntimeError(f"rows did not do identical work at {payload}B: {sorted(agreed)}")
+        bench.gate({f"{row[1]} {row[2]} @{payload}B": cells[(row[1], row[2], payload)]["checksum"]
+                    for row in MATRIX if row[1] in wanted})
     report(cells, values, run_cfg, args.quick, wanted, machine)
 
 
