@@ -9,36 +9,40 @@ The first project's question: every call that used to be a jump now serialises,
 copies, queues, traverses a socket and schedules on the far side — how much does
 that cost, and how much comes back without changing language?
 
-**The first answer is "tune it", not "rewrite it".** Applying a stack's own
-documented fix spans 0.99x to 7.97x. Stepping to the next stack along at the
-same effort never exceeds 1.99x. The two largest levers in the whole table are
-both configuration: turning deflate off in a Python WebSocket over
-incompressible bytes is worth 7.97x at 32 KiB, and turning on keep-alives in
-Go's standard-library HTTP is worth 2.01x to 2.45x.
+**No figure from this repository is quotable yet, and none appears on this
+page.** Every run so far was taken on a contended two-core slice of a shared
+Ryzen 9 5950X with an unreadable governor, so all but one carry
+`status: structure` rather than `verified`. What survives that is the ordering,
+never the multiple, and a landing page that printed the multiples would be
+presenting illustrations as results.
 
-**The whole ladder spans 7x to 9x**, Python over HTTP written the obvious way
-against tuned Go over UDP — not the two orders of magnitude the choice is
-usually argued with.
+Three orderings did hold across repeated runs:
 
-**It stops mattering as soon as the far side is busy.** A 36.5 µs crossing does
-not decide a latency budget when the same request meets a receiver whose p50 is
-588 µs or 326 ms depending on the width of one loop.
+- **Tuning beats stepping.** Applying a stack's own documented fix moves the
+  number further than moving to the next stack along at the same effort. The two
+  largest levers in the whole table are both configuration, not architecture.
+  The first answer is "tune it", not "rewrite it".
+- **The ladder is far shorter than the folklore.** Worst end to best end does
+  not reach the two orders of magnitude the choice is usually argued with.
+- **It stops mattering as soon as the far side is busy.** The crossing does not
+  decide a latency budget when the same request meets a receiver whose own p50
+  moves by orders of magnitude on the width of one loop.
 
-[Read the finding](projects/01-microservice-cost/FINDING.md), including the four
-attacks on it that survived.
+[Read the finding](projects/01-microservice-cost/FINDING.md) for the figures,
+each beside the conditions that qualify it, and the four attacks on it that
+survived.
 
 ## Read this before quoting a number
-
-**Nothing here is a baseline.** The box is a contended two-core slice of a
-shared Ryzen 9 5950X with an unreadable governor, and every result is
-`status: structure` except one. The orderings are the result; the absolute
-figures are not.
 
 **These are ping-pong round trips, not service calls** — one request in flight,
 no marshalling of a real object, no TLS, no service discovery, no retries, no
 concurrent clients. Every crossing figure is a floor, not an estimate. The floor
 still earns its place, because an argument for a boundary that fails at its own
 floor fails everywhere.
+
+**A verified set needs a quiet box.** The measurements are rerunnable with one
+command each, and the reruns are what turn the orderings above into quotable
+numbers.
 
 ## Why the numbers are worth reading anyway
 
