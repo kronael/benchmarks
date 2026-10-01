@@ -20,6 +20,12 @@ pinned cores that were 17% idle, of which the benchmark itself held 14% and a
 neighbour 69%. Per-CPU time is commensurable, and sampled before the benchmark
 starts it measures the neighbours rather than the benchmark.
 
+`claim()` takes that sample as its very first act, before it builds anything.
+It did not at first, and the first run under the new harness recorded the
+pinned cores as 99.5% busy on a box measured at 25-38% busy moments earlier:
+the sample had caught `claim()`'s own compile. A reading taken after the
+harness starts working describes the harness.
+
 ## The count is gated as well as the value — `gate()`
 
 One row satisfies any equality test while comparing nothing, and a comparison of
@@ -30,13 +36,19 @@ one row is the quiet failure this harness exists to catch.
 A second run on the same day stands beside the first instead of replacing it: a
 superseded number has to remain auditable next to the one that replaced it.
 
-## The machine readings come from before the run — `before()`, `record()`
+## The machine readings come from before the run — `claim()`, `record()`
 
 A quiet start that ends loud is still a baseline, and a loaded start is structure
-however quiet the finish. `QUIET_LOAD_15` is the one limit for the whole
-repository, so no measurement can set itself an easier one. The busy fraction of
-the pinned cores is recorded beside it but does not yet decide the status;
-`BUGS.md` carries that proposal.
+however quiet the finish. `QUIET_CORES` is the one limit for the whole
+repository, so no measurement can set itself an easier one.
+
+The status decides on the busy fraction of the pinned cores, not on the host
+load average. `/proc/loadavg` is not namespaced: it counts runnable tasks across
+all sixteen host CPUs while a measurement runs inside a two-CPU cpuset. Measured
+together, a host load of 26.3 sat beside pinned cores that were 63.5% idle, and
+a host load of 36.2 beside cores with zero steal. The host figure is kept in
+every result as `host_load_at_start`, because it describes the machine the slice
+lives on, but it decides nothing.
 
 ## The toolchains are read before the escalation — `claim()`, `record()`
 

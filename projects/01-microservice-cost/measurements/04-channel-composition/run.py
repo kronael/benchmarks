@@ -72,9 +72,9 @@ def main():
         points, reps = [cfg["quick"]], cfg["quick"]["reps"]
     cores = run["cores"]
 
+    machine: dict = {}
     if not args.quick:
-        bench.claim(cores, lambda: bench.run(["make", "-C", str(HERE), "build"]))
-    machine = bench.before(cores)
+        machine = bench.claim(cores, lambda: bench.run(["make", "-C", str(HERE), "build"]))
     rows, detail, agreed = {}, {}, {}
     for point in points:
         flags = [f"-depth={graph['depth']}", f"-width={graph['width']}",

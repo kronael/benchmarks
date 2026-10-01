@@ -39,8 +39,8 @@ Everything compiles before that escalation, on purpose. Under `sudo` the pinned
 toolchain cannot resolve from root's HOME and `go` silently falls back to the
 system go1.19.8, so the measured pass invokes no toolchain at all. The
 toolchain versions it did build with are recorded in the result file. A run
-started above `bench.QUIET_LOAD_15` is recorded as `status: structure`, never as
-a baseline.
+started with the pinned cores busier than `bench.QUIET_CORES` is recorded as
+`status: structure`, never as a baseline.
 
 ## Results
 

@@ -210,12 +210,12 @@ def main():
         if not args.no_build:
             build(matrix)
         return
+    machine: dict = {}
     if not args.quick:
-        bench.claim(CORES, None if args.no_build else lambda: build(matrix))
+        machine = bench.claim(CORES, None if args.no_build else lambda: build(matrix))
     elif not args.no_build:
         build(matrix)
 
-    machine = bench.before(CORES)
     rows, recorded, checksums = [], {}, {}
     for case, label, binary, extra_env in matrix:
         extra_env = dict(short, **extra_env)

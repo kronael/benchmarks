@@ -38,15 +38,15 @@ that a neighbour held is invisible in the load average. The gate also counts thi
 repository's own finished runs, so four measurements in a row downgrade each
 other.
 
-`bench.contention()` now samples the busy fraction of the pinned cores before the
-run and every result file carries it as `busy_on_pinned_cores_at_start`. It does
-NOT yet decide the status.
+**Fixed 2026-10-01.** The status now decides on `busy_on_pinned_cores_at_start`
+against `bench.QUIET_CORES`, set at the 10% the proposal named. The host load
+average stays in every result as `host_load_at_start`, because it describes the
+machine the slice lives on, but it decides nothing.
 
-**Proposal, needs sign-off.** Gate on `busy_on_pinned_cores_at_start` instead of
-the host load average, at roughly 10%, and keep the load average as fingerprint
-only. This changes the method statement in `CLAUDE.md`, which is why it is a
-proposal: every result recorded so far is labelled by the old gate, and the two
-labels do not agree.
+Every result recorded before that commit is labelled by the old gate, so a
+`verified` stamp dated earlier means only that the host load average was low. It
+is not comparable with a `verified` stamp from the new gate, and the superseded
+files are kept rather than relabelled.
 
 ## Measurement 02 — scheduling under load
 

@@ -27,9 +27,9 @@ from pathlib import Path
 from statistics import median
 
 ROOT = Path(__file__).parent
-TOOLCHAINS = ROOT / "dist" / "toolchains.json"
+PRERUN = ROOT / "dist" / "prerun.json"
 
-QUIET_LOAD_15 = 1.6
+QUIET_CORES = 0.10
 
 
 def run(command: list[str], cores: list[int] | None = None,
@@ -46,23 +46,29 @@ def run(command: list[str], cores: list[int] | None = None,
     return done.stdout
 
 
-def claim(cores: list[int], build: Callable[[], object] | None = None) -> None:
-    """Build, then take the cores by re-executing this script pinned and privileged.
+def claim(cores: list[int], build: Callable[[], object] | None = None) -> dict:
+    """Build, take the cores, and return the readings taken before the run.
 
-    Returns straight away in the measured pass, which is how `build` runs under
-    the caller's toolchain and never under root's. In the pass that starts the
-    measured one this does not return: it builds, escalates, and exits with the
-    child's status.
+    The busy fraction is sampled first of all, because everything after it is
+    this harness's own work: a build left running would be recorded as the
+    neighbours' load. The build then happens here rather than past the
+    escalation, which is how it runs under the caller's toolchain and never
+    under root's. In the pass that starts the measured one this does not
+    return: it escalates and exits with the child's status.
     """
     if os.geteuid() == 0:
-        return
+        return json.loads(PRERUN.read_text())["before"]
+    busy = contention(cores)
     run(["make", "-C", str(ROOT), "build"])
     if build is not None:
         build()
     machine = fingerprint()
-    TOOLCHAINS.write_text(json.dumps({"toolchains": machine["toolchains"],
-                                      "go_env": machine["go_env"]}))
+    PRERUN.write_text(json.dumps({
+        "toolchains": machine["toolchains"], "go_env": machine["go_env"],
+        "before": {"load15": os.getloadavg()[2], "busy_on_pinned_cores": busy},
+    }))
     on = ",".join(str(c) for c in cores)
+    print(f"# cores {on} are {1 - busy:.1%} idle", file=sys.stderr)
     print(f"# measured pass: chrt -f 80, cores {on}", file=sys.stderr)
     pinned = ["sudo", "-n", "chrt", "-f", "80", "taskset", "-c", on,
               sys.executable, *sys.argv]
@@ -89,11 +95,6 @@ def contention(cores: list[int], window: float = 1.0) -> float:
     now = _jiffies(cores)
     busy, total = now[0] - was[0], now[1] - was[1]
     return busy / total if total else 0.0
-
-
-def before(cores: list[int]) -> dict[str, float]:
-    """Every machine reading that must be taken BEFORE the run, never after."""
-    return {"load15": os.getloadavg()[2], "busy_on_pinned_cores": contention(cores)}
 
 
 def gate(checksums: Mapping[str, str]) -> str:
@@ -137,20 +138,21 @@ def record(results: Path, title: str, rows: dict[str, dict], cores: list[int],
     from the file instead of from a console nobody kept.
     """
     machine = fingerprint()
-    built = json.loads(TOOLCHAINS.read_text())
+    built = json.loads(PRERUN.read_text())
     stamp = datetime.now(timezone.utc)
-    status = "verified" if before["load15"] <= QUIET_LOAD_15 else "structure"
+    status = "verified" if before["busy_on_pinned_cores"] <= QUIET_CORES else "structure"
     results.mkdir(parents=True, exist_ok=True)
     out = results / f"{stamp:%Y%m%d-%H%M}-{title}.md"
     head = {
         "title": title, "date": f"{stamp:%Y-%m-%d}", "status": status,
         "host": machine["cpu_model"], "cpus": machine["cpus"],
         "kernel": machine["kernel"], "governor": machine["governor"] or "unreadable",
-        "turbo": machine["turbo"], "load_at_start": f"{before['load15']:.2f}",
-        "load_limit": QUIET_LOAD_15,
-        "load_at_end": " ".join(machine["load_avg"].split()[:3]),
+        "turbo": machine["turbo"],
         "busy_on_pinned_cores_at_start": f"{before['busy_on_pinned_cores']:.1%}",
+        "busy_limit": f"{QUIET_CORES:.0%}",
         "pinned_cores": cores,
+        "host_load_at_start": f"{before['load15']:.2f}",
+        "host_load_at_end": " ".join(machine["load_avg"].split()[:3]),
     }
     lines = ["---", *(f"{k}: {v}" for k, v in head.items()),
              "toolchains:", *(f"  {k}: {v}" for k, v in built["toolchains"].items()),
@@ -163,9 +165,9 @@ def record(results: Path, title: str, rows: dict[str, dict], cores: list[int],
         lines.append(f"| {name} | {s['samples']} | {s['low']:.3f} | {s['median']:.3f} "
                      f"| {s['high']:.3f} | {s['spread']:.3f} |")
     out.write_text("\n".join(lines) + "\n" + detail)
-    print(f"wrote {out}, 15-minute load {before['load15']:.2f} at the start against a "
-          f"limit of {QUIET_LOAD_15}, pinned cores "
-          f"{before['busy_on_pinned_cores']:.1%} busy")
+    print(f"wrote {out} as {status}: pinned cores {before['busy_on_pinned_cores']:.1%} "
+          f"busy at the start against a limit of {QUIET_CORES:.0%}, host load "
+          f"{before['load15']:.2f}")
     return out
 
 

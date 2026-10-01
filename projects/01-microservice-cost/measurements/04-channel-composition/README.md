@@ -48,10 +48,11 @@ all. The toolchain versions it did build with are recorded in the result file.
 
 This container's cpuset is 0-1 host-wide, so CLAUDE.md's `-c 2,3` is refused
 here. The cores come from `sweep.toml` rather than from the command line, so the
-documented command cannot name a core this box does not have. A run started above
-`bench.QUIET_LOAD_15` is filed as `structure` rather than as a baseline, and the
-file says which. Every result also carries the busy fraction of the pinned cores
-at the start, which is the number that actually describes this slice.
+documented command cannot name a core this box does not have. A run started with
+the pinned cores busier than `bench.QUIET_CORES` is filed as `structure` rather
+than as a baseline, and the file says which. The busy fraction of those two
+cores is what decides it, because the host load average counts sixteen CPUs this
+cpuset cannot use and says nothing about the slice.
 
 `make test` runs every composition once at a small shape and checks that all
 four fold to the same checksum. It takes about three seconds and measures
