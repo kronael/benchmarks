@@ -9,14 +9,18 @@ The first project's question: every call that used to be a jump now serialises,
 copies, queues, traverses a socket and schedules on the far side — how much does
 that cost, and how much comes back without changing language?
 
-**No figure from this repository is quotable yet, and none appears on this
-page.** Every run so far was taken on a contended two-core slice of a shared
-Ryzen 9 5950X with an unreadable governor, so all but one carry
-`status: structure` rather than `verified`. What survives that is the ordering,
-never the multiple, and a landing page that printed the multiples would be
-presenting illustrations as results.
+**No figure from this repository is quotable, and none appears on this page.**
+Every run is taken on a two-CPU slice of a Ryzen 9 5950X with an unreadable
+governor and neighbours that never stop. The runner judges a baseline on the
+busy fraction of the pinned cores against a 10% limit, and those cores have
+never been under 25% busy when a run started, so every result carries
+`status: structure`. This box cannot certify a baseline at all.
 
-Three orderings did hold across repeated runs:
+What survives is the ordering, and it survives well. The transport ladder has
+run three times with the pinned cores 26.4%, 85.9% and 99.5% busy at the start,
+and its headline spread moved 3.5% across that 3.8x change in neighbour load,
+with both ends of the ladder keeping their identity. Three orderings hold across
+repeated runs:
 
 - **Tuning beats stepping.** Applying a stack's own documented fix moves the
   number further than moving to the next stack along at the same effort. The two
@@ -40,9 +44,11 @@ concurrent clients. Every crossing figure is a floor, not an estimate. The floor
 still earns its place, because an argument for a boundary that fails at its own
 floor fails everywhere.
 
-**A verified set needs a quiet box.** The measurements are rerunnable with one
-command each, and the reruns are what turn the orderings above into quotable
-numbers.
+**A quotable set needs a quiet box, and the reruns have been done.** All four
+measurements ran again on 2026-10-01 under one command each, and all four came
+back `structure`. Quotable numbers now wait on the machine, not on the work: the
+neighbours here are five containers holding about a third of one core between
+them, and nothing below 25% busy has ever been observed at a run's start.
 
 ## Why the numbers are worth reading anyway
 
