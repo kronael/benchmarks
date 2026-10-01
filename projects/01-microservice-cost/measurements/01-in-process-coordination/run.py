@@ -51,6 +51,8 @@ def build(cfg: dict) -> None:
     `sudo` HOME belongs to root and the same command silently selects the system
     go1.19.8 instead of go1.27.1.
     """
+    if "simd" not in os.environ.get("GOEXPERIMENT", ""):
+        raise SystemExit("GOEXPERIMENT=simd is required; make exports it, so run make bench")
     BIN.mkdir(exist_ok=True)
     vector = cfg["experiment"]["variants"][1]
     for _, variant, amd64 in matrix(cfg):
@@ -132,9 +134,6 @@ def main() -> None:
     parser.add_argument("--quick", action="store_true", help="the small sizes only, as a smoke test")
     args = parser.parse_args()
     cfg = tomllib.loads((HERE / args.config).read_text())
-    if "simd" not in os.environ.get("GOEXPERIMENT", ""):
-        raise SystemExit("GOEXPERIMENT=simd is required; make exports it, so run make bench")
-
     if args.clean:
         for _, variant, amd64 in matrix(cfg):
             (BIN / f"{variant}-{amd64}").unlink(missing_ok=True)
