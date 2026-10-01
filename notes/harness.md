@@ -42,13 +42,22 @@ A quiet start that ends loud is still a baseline, and a loaded start is structur
 however quiet the finish. `QUIET_CORES` is the one limit for the whole
 repository, so no measurement can set itself an easier one.
 
-The status decides on the busy fraction of the pinned cores, not on the host
-load average. `/proc/loadavg` is not namespaced: it counts runnable tasks across
-all sixteen host CPUs while a measurement runs inside a two-CPU cpuset. Measured
-together, a host load of 26.3 sat beside pinned cores that were 63.5% idle, and
-a host load of 36.2 beside cores with zero steal. The host figure is kept in
-every result as `host_load_at_start`, because it describes the machine the slice
-lives on, but it decides nothing.
+The status decides on the busy fraction of the pinned cores, not on the load
+average. The load average counts runnable and uninterruptible tasks, so a
+variant that spawns many threads inflates it by its own thread count rather than
+by the machine's business. Measured on this box, which has two CPUs: measurement
+02's sleeper variant drove the load average to 81.6 with eleven tasks runnable
+and none blocked on I/O, while measurement 04 at the same moment would have read
+a fraction of that. A gate on that number grades the workload under test, so 02
+could never pass it and 04 could.
+
+It is also self-poisoning across runs. The fifteen-minute average carries the
+decay tail of the previous measurement, so four in a row downgrade each other: a
+load average of 26.3 sat beside pinned cores that were 63.5% idle, minutes after
+a run of this repository's own.
+
+The load average is kept in every result as `host_load_at_start`, because it
+says something about the machine, but it decides nothing.
 
 ## The toolchains are read before the escalation — `claim()`, `record()`
 

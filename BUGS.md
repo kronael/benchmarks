@@ -23,25 +23,35 @@ Fixing `CLAUDE.md` changes the method statement, so it waits for sign-off.
 
 ### The load gate reads a number that is not about the pinned cores (2026-09-27)
 
-`bench.QUIET_LOAD_15` gates on `/proc/loadavg`, which is the host's and is not
-namespaced. It counts runnable tasks across every CPU the host has, while a
-measurement runs inside this container's two-CPU cpuset. The two numbers are not
-commensurable, and measurement disproves the assumption that they track:
+`bench.QUIET_LOAD_15` gates on `/proc/loadavg`, which counts runnable and
+uninterruptible tasks rather than CPU time. A variant that spawns many threads
+therefore inflates it by its own thread count, and the gate grades the workload
+under test instead of the machine. This box has two CPUs; measurement 02's
+sleeper variant drove the load average to 81.6 with eleven tasks runnable and
+none blocked on I/O, so 02 could never pass a gate that measurement 04 could.
+Measurement disproves the assumption that the two numbers track:
 
 | moment | host load 15m | pinned cores 0-1 |
 |---|---:|---|
 | during measurement 02 | 36.2 | 17% idle, zero steal, 14% of capacity mine |
 | during measurement 02, later | 10.6 | 76% busy |
 
-A host load of 36 said nothing about cores 0-1, and the 69% of those two cores
-that a neighbour held is invisible in the load average. The gate also counts this
-repository's own finished runs, so four measurements in a row downgrade each
-other.
+A load average of 36 said nothing about cores 0-1, and the 69% of those two
+cores that a neighbour held is invisible in it. The gate also counts this
+repository's own finished runs through the fifteen-minute decay tail, so four
+measurements in a row downgrade each other: a load average of 26.3 sat beside
+cores that were 63.5% idle, minutes after a run of our own.
 
 **Fixed 2026-10-01.** The status now decides on `busy_on_pinned_cores_at_start`
-against `bench.QUIET_CORES`, set at the 10% the proposal named. The host load
-average stays in every result as `host_load_at_start`, because it describes the
-machine the slice lives on, but it decides nothing.
+against `bench.QUIET_CORES`, set at the 10% the proposal named. The load average
+stays in every result as `host_load_at_start`, because it says something about
+the machine, but it decides nothing.
+
+The commit that shipped this, `b0589c1`, justified it in its message with a
+mechanism that is wrong: it claimed `/proc/loadavg` counts tasks across sixteen
+host CPUs while the measurement runs in a two-CPU cpuset. This box has two CPUs,
+full stop, and the divergence comes from thread counts and the decay tail as
+described above. The change is right and the stated reason was not.
 
 Every result recorded before that commit is labelled by the old gate, so a
 `verified` stamp dated earlier means only that the host load average was low. It
