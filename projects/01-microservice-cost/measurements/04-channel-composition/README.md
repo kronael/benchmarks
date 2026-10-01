@@ -51,8 +51,9 @@ here. The cores come from `sweep.toml` rather than from the command line, so the
 documented command cannot name a core this box does not have. A run started with
 the pinned cores busier than `bench.QUIET_CORES` is filed as `structure` rather
 than as a baseline, and the file says which. The busy fraction of those two
-cores is what decides it, because the host load average counts sixteen CPUs this
-cpuset cannot use and says nothing about the slice.
+cores is what decides it, because the load average counts runnable tasks rather
+than CPU time: a variant that spawns threads inflates it by its own thread count,
+so gating on it would grade the workload instead of the machine.
 
 `make test` runs every composition once at a small shape and checks that all
 four fold to the same checksum. It takes about three seconds and measures

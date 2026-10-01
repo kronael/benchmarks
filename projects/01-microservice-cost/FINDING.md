@@ -22,9 +22,20 @@ fails at its own floor fails everywhere.
 
 **The box is a contended two-core slice** of a shared Ryzen 9 5950X with an
 unreadable governor, so the question is how much that moves the spread. The
-answer is: less than expected. The two ladder runs started with the pinned cores
-26.4% and 85.9% busy, and the full-ladder spread at 128 B read 8.67x and 8.97x.
-A 3.3x change in neighbour load moved it 3%.
+answer is: less than expected, and three runs now say so. The ladder ran with
+the pinned cores 26.4%, 85.9% and 99.5% busy at the start, and the full-ladder
+spread at 128 B read 8.67x, 8.97x and 8.82x. A 3.8x change in neighbour load
+moved it 3.5%, and both ends of the ladder held their identity: `py-http`
+untuned slowest at 316.6, 316.8 and 311.1 µs, `go-udp` tuned fastest at 36.5,
+35.3 and 35.3 µs.
+
+**No result here is `verified`.** Every run carries `status: structure` under the
+gate as it now stands, which judges the busy fraction of the pinned cores
+against a 10% limit. Those cores have not been under 25% busy at any point when
+a run was started, so this box cannot certify a baseline at all. Earlier files
+labelled `verified` were judged by the superseded load-average gate and that
+label does not mean what it says; `BUGS.md` records the change and why the
+reason first given for it was wrong.
 
 An earlier version of this file claimed the slow rows hold more cores and so
 lose more to a neighbour, quoting per-row core figures. **Measurement 03 records
@@ -32,8 +43,7 @@ no per-row core usage at all** — its columns are rung, row, effort, payload an
 the three percentiles. Those figures were measurement 02's, about a receiver
 rather than a transport, and they did not belong here.
 
-Every result is `status: structure` except measurement 04's baseline. The
-orderings are the result; the absolute figures are not.
+The orderings are the result; the absolute figures are not.
 
 ## The main question
 
@@ -43,9 +53,11 @@ orderings are the result; the absolute figures are not.
 > comes back without changing language?
 
 **Worst end to best end, the ladder spans 7x to 9x** — Python over HTTP written
-the obvious way against tuned Go over UDP, across five payload sizes and two
+the obvious way against tuned Go over UDP, across five payload sizes and three
 runs (6.91x to 8.97x). Not the two orders of magnitude the choice is usually
-argued with.
+argued with. The three runs put the 128 B figure at 8.67x, 8.97x and 8.82x
+while the neighbour load on the pinned cores moved 3.8x, so this is the most
+replicated number in the project.
 
 **Between nothing and 8x comes back without changing language or transport**,
 depending on which default was wrong. Keep-alives in Go's standard-library HTTP
@@ -107,14 +119,17 @@ once.
 
 - **`rsx-cast` and the specialist transports.** MoldUDP64, SoupBinTCP, KCP and
   Aeron were to be priced beside it. None exist here.
-- **Group B in Python and Rust.** Measurement 04 is Go only, so whether the sign
-  holds across runtimes is not answered.
-- **Measurement 02's cross-language rows.** Cases A, B, P1 and P2 need the Rust
-  binaries the rsx lift dropped; the checksum gate now refuses them rather than
-  passing them on one row.
-- **A quiet box.** Only measurement 04 has a run started under the load limit.
-  Measurement 01's two runs agree on its lower crossover and disagree on its
-  upper one, so the upper one is not claimed.
+- **Group B in Python and Rust.** Measurement 04 has a Python rung in
+  `variants/python` but no run that includes it, so whether the sign holds
+  across runtimes is still unanswered.
+- **Measurement 02's cross-language rows.** The Rust twins for cases A and B
+  exist in `variants/rust/src/bin`, but `BUGS.md` records that case A's
+  operating points exceed this box, so `make bench` runs case C only.
+- **A quiet box, and this one is not it.** No run has ever started with the
+  pinned cores under 25% busy, against a 10% limit, so nothing here is
+  `verified` and nothing can be until the box is quiet or the neighbours stop.
+  Measurement 01's runs agree on its lower crossover and disagree on its upper
+  one, so the upper one is not claimed.
 - **Half of measurement 02's sweep**, which exceeds a `uint32` nanosecond
   latency field. `BUGS.md` carries the choice between a wider field and a
   shorter sweep.
